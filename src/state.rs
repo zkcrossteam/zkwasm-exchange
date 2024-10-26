@@ -1,9 +1,9 @@
 use crate::StorageData;
 use crate::MERKLE_MAP;
-use std::cell::RefCell;
 use core::slice::IterMut;
 use zkwasm_rest_abi::Player;
 use serde::Serialize;
+use crate::settlement::SettlementInfo;
 
 #[derive(Debug, Serialize)]
 pub struct PlayerData {
@@ -40,13 +40,21 @@ impl State {
         let player = HelloWorldPlayer::get_from_pid(&HelloWorldPlayer::pkey_to_pid(&pkey.try_into().unwrap()));
         serde_json::to_string(&player).unwrap()
     }
+
+    pub fn rand_seed() -> u64 {
+        0
+    }
+
     pub fn store(&self) {
     }
+
     pub fn initialize() {
     }
+
     pub fn new() -> Self {
         State {}
     }
+
     pub fn snapshot() -> String {
         let state = unsafe { &STATE };
         serde_json::to_string(&state).unwrap()
@@ -54,6 +62,12 @@ impl State {
 
     pub fn preempt() -> bool {
         return false;
+    }
+
+    pub fn flush_settlement() -> Vec<u8> {
+        let data = SettlementInfo::flush_settlement();
+        unsafe {STATE.store()};
+        data
     }
 }
 
@@ -80,7 +94,7 @@ impl Transaction {
     }
     pub fn decode(params: [u64; 4]) -> Self {
         let command = (params[0] >> 32) & 0xff;
-        let mut data = vec![];
+        let data = vec![];
         data = vec![params[1], params[2], params[3]]; // pkey[0], pkey[1], amount
         Transaction {
             command,
@@ -88,11 +102,12 @@ impl Transaction {
         }
     }
     pub fn install_player(&self, pkey: &[u64; 4]) -> u32 {
-        let player = HelloWorldPlayer::get(pkey);
+        let pid = HelloWorldPlayer::pkey_to_pid(pkey);
+        let player = HelloWorldPlayer::get_from_pid(&pid);
         match player {
             Some(_) => ERROR_PLAYER_ALREADY_EXIST,
             None => {
-                let player = Player::new(&pkey);
+                let player = HelloWorldPlayer::new_from_pid(pid);
                 player.store();
                 0
             }
@@ -133,7 +148,7 @@ impl Transaction {
     */
 
 
-    pub fn process(&self, pkey: &[u64; 4]) -> u32 {
+    pub fn process(&self, pkey: &[u64; 4], _rand: &[u64; 4]) -> u32 {
         let b = match self.command {
             INSTALL_PLAYER => self.install_player(pkey),
             INC_COUNTER => self.inc_counter(pkey),
@@ -144,11 +159,5 @@ impl Transaction {
         let kvpair = unsafe { &mut MERKLE_MAP.merkle.root };
         zkwasm_rust_sdk::dbg!("root after process {:?}\n", kvpair);
         b
-    }
-
-    pub fn flush_settlement() -> Vec<u8> {
-        let data = SettlementInfo::flush_settlement();
-        unsafe {STATE.store()};
-        data
     }
 }
