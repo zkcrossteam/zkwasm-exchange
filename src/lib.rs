@@ -1,8 +1,6 @@
 use wasm_bindgen::prelude::*;
 use zkwasm_rest_abi::*;
 pub mod config;
-pub mod events;
-pub mod settlement;
 pub mod state;
 
 use crate::config::Config;

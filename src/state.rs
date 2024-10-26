@@ -1,12 +1,9 @@
-use crate::config::{default_entities, default_local, get_modifier};
-use crate::events::restart_object_modifier;
-use crate::events::EventQueue;
 use crate::StorageData;
-use crate::settlement::{encode_address, SettleMentInfo, WithdrawInfo};
 use crate::MERKLE_MAP;
 use std::cell::RefCell;
-use crate::Player;
 use core::slice::IterMut;
+use zkwasm_rest_abi::Player;
+use serde::Serialize;
 
 #[derive(Debug, Serialize)]
 pub struct PlayerData {
@@ -33,31 +30,34 @@ impl StorageData for PlayerData {
     }
 }
 
-pub type AutomataPlayer = Player<PlayerData>;
+pub type HelloWorldPlayer = Player<PlayerData>;
 
 #[derive (Serialize)]
 pub struct State {}
 
 impl State {
-    pub fn get_state(pid: Vec<u64>) -> String {
-        let player = AutomataPlayer::get(&pid.try_into().unwrap()).unwrap();
+    pub fn get_state(pkey: Vec<u64>) -> String {
+        let player = HelloWorldPlayer::get_from_pid(&HelloWorldPlayer::pkey_to_pid(&pkey.try_into().unwrap()));
         serde_json::to_string(&player).unwrap()
     }
-    pub fn store() {
+    pub fn store(&self) {
     }
     pub fn initialize() {
     }
     pub fn new() -> Self {
         State {}
     }
+    pub fn snapshot() -> String {
+        let state = unsafe { &STATE };
+        serde_json::to_string(&state).unwrap()
+    }
+
+    pub fn preempt() -> bool {
+        return false;
+    }
 }
 
-pub struct SafeState(RefCell<SafeState>);
-unsafe impl Sync for SafeEventQueue {}
-
-lazy_static::lazy_static! {
-    pub static ref STATE: SafeState = SafeState (RefCell::new(State::new()));
-}
+pub static mut STATE: State  = State {};
 
 pub struct Transaction {
     pub command: u64,
@@ -88,7 +88,7 @@ impl Transaction {
         }
     }
     pub fn install_player(&self, pkey: &[u64; 4]) -> u32 {
-        let player = AutomataPlayer::get(pkey);
+        let player = HelloWorldPlayer::get(pkey);
         match player {
             Some(_) => ERROR_PLAYER_ALREADY_EXIST,
             None => {
@@ -100,13 +100,13 @@ impl Transaction {
     }
 
     pub fn inc_counter(&self, pkey: &[u64; 4]) -> u32 {
-        //let player = AutomataPlayer::get(pkey);
+        //let player = HelloWorldPlayer::get(pkey);
         todo!()
     }
 
     /*
     pub fn withdraw(&self, pkey: &[u64; 4]) -> u32 {
-        let mut player = AutomataPlayer::get(pkey);
+        let mut player = HelloWorldPlayer::get(pkey);
         match player.as_mut() {
             None => ERROR_PLAYER_NOT_EXIST,
             Some(player) => {
@@ -132,14 +132,6 @@ impl Transaction {
     }
     */
 
-    pub fn snapshot() -> String {
-        let state = unsafe { &STATE };
-        serde_json::to_string(&state).unwrap()
-    }
-
-    pub fn preempt() -> bool {
-        return false;
-    }
 
     pub fn process(&self, pkey: &[u64; 4]) -> u32 {
         let b = match self.command {
