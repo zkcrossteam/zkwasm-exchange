@@ -94,8 +94,7 @@ impl Transaction {
     }
     pub fn decode(params: [u64; 4]) -> Self {
         let command = (params[0] >> 32) & 0xff;
-        let data = vec![];
-        data = vec![params[1], params[2], params[3]]; // pkey[0], pkey[1], amount
+        let data = vec![params[1], params[2], params[3]]; // pkey[0], pkey[1], amount
         Transaction {
             command,
             data,
@@ -114,7 +113,7 @@ impl Transaction {
         }
     }
 
-    pub fn inc_counter(&self, pkey: &[u64; 4]) -> u32 {
+    pub fn inc_counter(&self, _pkey: &[u64; 4]) -> u32 {
         //let player = HelloWorldPlayer::get(pkey);
         todo!()
     }
