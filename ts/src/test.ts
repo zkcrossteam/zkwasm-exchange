@@ -7,6 +7,8 @@ async function main() {
   //let towerId = 10038n + y;
   let state = await player.getState();
   console.log(state);
+  state = await player.register();
+  console.log(state);
 }
 
 main();

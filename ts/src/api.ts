@@ -5,9 +5,8 @@ function bytesToHex(bytes: Array<number>): string  {
     return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
 }
 
-const CMD_WITHDRAW = 1n;
-const CMD_DEPOSIT = 2n;
-const CMD_PLACE = 3n;
+const CMD_INSTALL_PLAYER = 1n;
+const CMD_INC_COUNTER = 2n;
 
 
 function createCommand(nonce: bigint, command: bigint, feature: bigint) {
@@ -25,6 +24,7 @@ export class Player {
     this.rpc = new ZKWasmAppRpc(rpc);
   }
 
+  /* deposit 
   async deposit(balance: bigint) {
     let nonce = await this.getNonce();
     let accountInfo = new LeHexBN(query(this.processingKey).pkx).toU64Array();
@@ -41,6 +41,7 @@ export class Player {
       console.log("deposit error at processing key:", this.processingKey);
     }
   }
+  */
 
   async getState(): Promise<any> {
     let state:any = await this.rpc.queryState(this.processingKey);
@@ -59,22 +60,22 @@ export class Player {
     return nonce;
   }
 
-  async place(bet: bigint) {
+  async register() {
     let nonce = await this.getNonce();
     try {
-      let processStamp = await this.rpc.sendTransaction(
-        new BigUint64Array([createCommand(nonce, CMD_PLACE, 0n), bet, 0n, 0n]),
+      let result = await this.rpc.sendTransaction(
+        new BigUint64Array([createCommand(nonce, CMD_INSTALL_PLAYER, 0n), 0n, 0n, 0n]),
         this.processingKey
       );
-      console.log("place processed at:", processStamp);
+      return result
     } catch(e) {
       if (e instanceof Error) {
         console.log(e.message);
       }
-      console.log("place error at id:", bet);
     }
   }
 
+  /*
   async withdrawRewards(address: string, amount: bigint) {
     let nonce = await this.getNonce();
     let addressBN = new BN(address, 16);
@@ -82,14 +83,6 @@ export class Player {
 
     console.log("address is", address);
     console.log("address be is", a);
-
-
-    /*
-  (32 bit amount | 32 bit highbit of address)
-  (64 bit mid bit of address (be))
-  (64 bit tail bit of address (be))
-     */
-
 
     let firstLimb = BigInt('0x' + bytesToHex(a.slice(0,4).reverse()));
     let sndLimb = BigInt('0x' + bytesToHex(a.slice(4,12).reverse()));
@@ -116,5 +109,6 @@ export class Player {
       console.log("collect reward error at address:", address);
     }
   }
+  */
 }
 

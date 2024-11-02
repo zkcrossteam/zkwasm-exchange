@@ -93,7 +93,7 @@ impl Transaction {
         }
     }
     pub fn decode(params: [u64; 4]) -> Self {
-        let command = (params[0] >> 32) & 0xff;
+        let command = params[0] & 0xff;
         let data = vec![params[1], params[2], params[3]]; // pkey[0], pkey[1], amount
         Transaction {
             command,
@@ -101,6 +101,7 @@ impl Transaction {
         }
     }
     pub fn install_player(&self, pkey: &[u64; 4]) -> u32 {
+        zkwasm_rust_sdk::dbg!("install \n");
         let pid = HelloWorldPlayer::pkey_to_pid(pkey);
         let player = HelloWorldPlayer::get_from_pid(&pid);
         match player {
