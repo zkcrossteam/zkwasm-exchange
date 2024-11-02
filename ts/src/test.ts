@@ -5,8 +5,6 @@ let account = "1234";
 let player = new Player(account, "http://localhost:3000");
 async function main() {
   //let towerId = 10038n + y;
-  await player.deposit(15000n);
-  await player.place(3n);
   let state = await player.getState();
   console.log(state);
 }
