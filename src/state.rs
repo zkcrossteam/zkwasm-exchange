@@ -33,7 +33,9 @@ impl StorageData for PlayerData {
 pub type HelloWorldPlayer = Player<PlayerData>;
 
 #[derive (Serialize)]
-pub struct State {}
+pub struct State {
+    counter: u64
+}
 
 impl State {
     pub fn get_state(pkey: Vec<u64>) -> String {
@@ -52,7 +54,9 @@ impl State {
     }
 
     pub fn new() -> Self {
-        State {}
+        State {
+            counter: 0,
+        }
     }
 
     pub fn snapshot() -> String {
@@ -61,7 +65,8 @@ impl State {
     }
 
     pub fn preempt() -> bool {
-        return false;
+        let state = unsafe {&STATE};
+        return state.counter >= 20;
     }
 
     pub fn flush_settlement() -> Vec<u8> {
@@ -69,15 +74,22 @@ impl State {
         unsafe {STATE.store()};
         data
     }
+
+    pub fn tick(&mut self) {
+        self.counter += 1;
+    }
 }
 
-pub static mut STATE: State  = State {};
+pub static mut STATE: State  = State {
+    counter: 0
+};
 
 pub struct Transaction {
     pub command: u64,
     pub data: Vec<u64>,
 }
 
+const AUTOTICK: u64 = 0;
 const INSTALL_PLAYER: u64 = 1;
 const INC_COUNTER: u64 = 2;
 
@@ -119,45 +131,17 @@ impl Transaction {
         todo!()
     }
 
-    /*
-    pub fn withdraw(&self, pkey: &[u64; 4]) -> u32 {
-        let mut player = HelloWorldPlayer::get(pkey);
-        match player.as_mut() {
-            None => ERROR_PLAYER_NOT_EXIST,
-            Some(player) => {
-                if let Some(treasure) = player.data.local.0.last_mut() {
-                    let withdraw = WithdrawInfo::new(
-                        0,
-                        0,
-                        0,
-                        [*treasure as u64, 0, 0, 0],
-                        encode_address(&self.data),
-                    );
-                    SettleMentInfo::append_settlement(withdraw);
-                    *treasure = 0;
-                    //let t = player.data.local.0.last().unwrap();
-                    //zkwasm_rust_sdk::dbg!("treasure is {}", t);
-                    player.store();
-                } else {
-                    unreachable!();
-                }
-                0
-            }
-        }
-    }
-    */
-
-
     pub fn process(&self, pkey: &[u64; 4], _rand: &[u64; 4]) -> u32 {
-        let b = match self.command {
+        match self.command {
+            AUTOTICK => {
+                unsafe { STATE.tick() };
+                return 0;
+            },
             INSTALL_PLAYER => self.install_player(pkey),
             INC_COUNTER => self.inc_counter(pkey),
             _ => {
-                0
+                return 0
             }
-        };
-        let kvpair = unsafe { &mut MERKLE_MAP.merkle.root };
-        zkwasm_rust_sdk::dbg!("root after process {:?}\n", kvpair);
-        b
+        }
     }
 }
