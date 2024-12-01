@@ -8,7 +8,6 @@ impl SettlementInfo {
         unsafe { SETTLEMENT.0.push(info) };
     }
     pub fn flush_settlement() -> Vec<u8> {
-        zkwasm_rust_sdk::dbg!("flush settlement\n");
         let sinfo = unsafe { &mut SETTLEMENT };
         let mut bytes: Vec<u8> = Vec::with_capacity(sinfo.0.len() * 32);
         for s in &sinfo.0 {
