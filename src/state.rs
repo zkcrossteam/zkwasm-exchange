@@ -66,7 +66,7 @@ impl State {
 
     pub fn preempt() -> bool {
         let state = unsafe {&STATE};
-        return state.counter >= 20;
+        return state.counter % 20 == 0;
     }
 
     pub fn flush_settlement() -> Vec<u8> {
