@@ -64,7 +64,7 @@ export class Player {
     let nonce = await this.getNonce();
     try {
       let result = await this.rpc.sendTransaction(
-        new BigUint64Array([createCommand(nonce, CMD_INSTALL_PLAYER, 0n), 0n, 0n, 0n]),
+        new BigUint64Array([createCommand(nonce, CMD_INSTALL_PLAYER, 0n), 0n, 0n, 0n, 0n, 0n]),
         this.processingKey
       );
       return result
