@@ -8,6 +8,8 @@ pub struct State {
     pub total_fee: u64,
     pub market_id_counter: u64,
     pub order_id_counter: u64,
+    pub trade_id_counter: u64,
+    // add debug order, trade, market info
 }
 
 impl State {
@@ -21,9 +23,11 @@ impl State {
     }
 
     pub fn store() {
+        // TODO store to db
     }
 
     pub fn initialize() {
+        // TODO load from db
     }
 
     pub fn new() -> Self {
@@ -32,6 +36,7 @@ impl State {
             total_fee: 0,
             market_id_counter: 0,
             order_id_counter: 0,
+            trade_id_counter: 0,
         }
     }
 
@@ -64,6 +69,11 @@ impl State {
         self.order_id_counter += 1;
         self.order_id_counter
     }
+
+    pub fn get_new_trade_id(&mut self) -> u64 {
+        self.trade_id_counter += 1;
+        self.trade_id_counter
+    }
 }
 
 pub static mut STATE: State  = State {
@@ -71,5 +81,6 @@ pub static mut STATE: State  = State {
     total_fee: 0,
     market_id_counter: 0,
     order_id_counter: 0,
+    trade_id_counter: 0,
 };
 

@@ -7,7 +7,6 @@ use crate::player::HelloWorldPlayer;
 use crate::settlement::{SETTLEMENT, SettlementInfo};
 use crate::state::STATE;
 use crate::StorageData;
-use crate::transaction::Data::Withdraw;
 
 pub struct Transaction {
     pub nonce: u64,
@@ -30,6 +29,8 @@ const TRANSFER: u64 = 9;
 const WITHDRAW: u64 = 10;
 const ADD_TRADE: u64 = 11;
 
+
+// TODO fix error number
 const ERROR_PLAYER_ALREADY_EXIST:u32 = 1;
 const ERROR_TOKEN_ALREADY_EXIST:u32 = 1;
 const ERROR_TOKEN_NOT_EXIST: u32 = 1;
@@ -53,6 +54,7 @@ const ERROR_PLAYER_IS_NOT_ADMIN:u32 = 0xffffffff;
 
 const COMMON_PREFIX: u64 = 0xffffffffffffffff;
 const ORDER_PREFIX: u64 = 0xfffffffffffffffd;
+const TRADE_PREFIX: u64 = 0xfffffffffffffffc;
 const TOKEN_STORE_PREFIX: u64 = 1;
 const MARKET_STORE_PREFIX: u64 = 1;
 
@@ -458,6 +460,10 @@ impl Transaction {
                 player_a_token_b_position.store(market.token_b, &a_order.pid);
                 player_b_token_a_position.store(market.token_a, &b_order.pid);
                 player_b_token_b_position.store(market.token_b, &b_order.pid);
+                let trace_id = unsafe {STATE.get_new_trade_id()};
+                let trade = Trade::new(trace_id, a_order.id, b_order.id, params.a_actual_amount, params.b_actual_amount);
+                trade.store();
+                0
             }
             _ => {
                 zkwasm_rust_sdk::dbg!("unknown command\n");
@@ -504,7 +510,7 @@ impl Transaction {
         position.inc_lock_balance(cost);
 
         let order_id = unsafe { STATE.get_new_order_id() };
-        let order = Order::new(order_id, Order::TYPE_LIMIT, Order::STATUS_LIVE, pid, params.market_id, params.flag as u8, 0, params.limit_price, params.amount, 0);
+        let order = Order::new(order_id, Order::TYPE_LIMIT, Order::STATUS_LIVE, *pid, params.market_id, params.flag as u8, 0, params.limit_price, params.amount, 0);
         position.store(token_idx, pid);
         order.store();
         Ok(0)
@@ -982,5 +988,84 @@ impl StorageData for Order {
         data.push(self.price);
         data.push(self.amount);
         data.push(self.already_deal_amount);
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Trade {
+    /// 唯一id
+    pub trade_id: u64,
+
+    /// 买的order id
+    pub a_order_id: u64,
+
+    /// 卖的order id
+    pub b_order_id: u64,
+
+    /// a的实际数量
+    pub a_actual_amount: u64,
+
+    /// b的实际数量
+    pub b_actual_amount: u64,
+}
+
+impl Trade {
+    pub fn new(trade_id: u64, a_order_id: u64, b_order_id: u64, a_actual_amount: u64, b_actual_amount: u64) -> Self {
+        Self {
+            trade_id,
+            a_order_id,
+            b_order_id,
+            a_actual_amount,
+            b_actual_amount,
+        }
+    }
+
+    pub fn get_key(trade_id: u64) -> [u64; 4] {
+        [TRADE_PREFIX, 0, 0, trade_id]
+    }
+
+    pub fn store(&self) {
+        zkwasm_rust_sdk::dbg!("store trade\n");
+        let mut data = Vec::new();
+        self.to_data(&mut data);
+        let kvpair = unsafe { &mut MERKLE_MAP };
+        kvpair.set(&Self::get_key(self.trade_id), data.as_slice());
+        zkwasm_rust_sdk::dbg!("end store trade\n");
+    }
+
+    pub fn load(trade_id: u64) -> Option<Self> {
+        zkwasm_rust_sdk::dbg!("load trade\n");
+        let kvpair = unsafe { &mut MERKLE_MAP };
+        let mut data = kvpair.get(&Self::get_key(trade_id));
+        if data.is_empty() {
+            return None
+        }
+        let mut u64data = data.iter_mut();
+        Some(Self::from_data(&mut u64data))
+    }
+}
+
+impl StorageData for Trade {
+    fn from_data(u64data: &mut IterMut<u64>) -> Self {
+        let trade_id = *u64data.next().unwrap();
+        let a_order_id = *u64data.next().unwrap();
+        let b_order_id = *u64data.next().unwrap();
+        let a_actual_amount = *u64data.next().unwrap();
+        let b_actual_amount = *u64data.next().unwrap();
+        Trade {
+            trade_id,
+            a_order_id,
+            b_order_id,
+            a_actual_amount,
+            b_actual_amount,
+        }
+    }
+
+    fn to_data(&self, data: &mut Vec<u64>) {
+        data.push(self.trade_id);
+        data.push(self.a_order_id);
+        data.push(self.b_order_id);
+        data.push(self.a_actual_amount);
+        data.push(self.b_actual_amount);
     }
 }
