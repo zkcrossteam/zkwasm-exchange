@@ -1,6 +1,7 @@
 use crate::player::HelloWorldPlayer;
 use crate::settlement::SettlementInfo;
 use serde::Serialize;
+use zkwasm_rest_abi::{MERKLE_MAP, StorageData};
 
 #[derive(Serialize)]
 pub struct State {
@@ -25,11 +26,14 @@ impl State {
     }
 
     pub fn store() {
-        // TODO store to db
+        let mut data = Vec::new();
+        unsafe { STATE.to_data(&mut data) };
+        let kvpair = unsafe { &mut MERKLE_MAP };
+        kvpair.set(&Self::get_key(), data.as_slice());
     }
 
     pub fn initialize() {
-        // TODO load from db
+        Self::load();
     }
 
     pub fn new() -> Self {
@@ -74,7 +78,42 @@ impl State {
 
     pub fn get_new_trade_id(&mut self) -> u64 {
         self.trade_id_counter += 1;
+        let tid = self.trade_id_counter;
+        zkwasm_rust_sdk::dbg!("get_new_trade_id {}\n", tid);
         self.trade_id_counter
+    }
+
+    pub fn get_key() -> [u64; 4] {
+        [0, 0, 0, 0]
+    }
+
+    pub fn load() {
+        let kvpair = unsafe { &mut MERKLE_MAP };
+        let mut data = kvpair.get(&Self::get_key());
+        if !data.is_empty() {
+            let mut u64data = data.iter_mut();
+            unsafe { STATE = State::from_data(&mut u64data) };
+        }
+    }
+}
+
+impl StorageData for State {
+    fn from_data(u64data: &mut std::slice::IterMut<u64>) -> Self {
+        State {
+            counter: *u64data.next().unwrap(),
+            total_fee: *u64data.next().unwrap(),
+            market_id_counter: *u64data.next().unwrap(),
+            order_id_counter: *u64data.next().unwrap(),
+            trade_id_counter: *u64data.next().unwrap(),
+        }
+    }
+
+    fn to_data(&self, data: &mut Vec<u64>) {
+        data.push(self.counter);
+        data.push(self.total_fee);
+        data.push(self.market_id_counter);
+        data.push(self.order_id_counter);
+        data.push(self.trade_id_counter);
     }
 }
 

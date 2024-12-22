@@ -175,6 +175,40 @@ export class Player {
       }
     }
   }
+
+  async addMarketOrder(marketId: bigint, flag: bigint, amount: bigint) {
+    let nonce = await this.getNonce();
+    try {
+      let params = [marketId, flag, amount];
+      let txData = new TransactionData(nonce, ADD_MARKET_ORDER, params);
+      let result = await this.rpc.sendTransaction(
+          txData.encodeCommand(),
+          this.processingKey
+      );
+      return result
+    } catch(e) {
+      if (e instanceof Error) {
+        console.log(e.message);
+      }
+    }
+  }
+
+  async addTrace(aOrderId: bigint, bOrderId: bigint, aActualAmount: bigint, bActualAmount: bigint) {
+    let nonce = await this.getNonce();
+    try {
+      let params = [aOrderId, bOrderId, aActualAmount, bActualAmount];
+      let txData = new TransactionData(nonce, ADD_TRADE, params);
+      let result = await this.rpc.sendTransaction(
+          txData.encodeCommand(),
+          this.processingKey
+      );
+      return result
+    } catch(e) {
+      if (e instanceof Error) {
+        console.log(e.message);
+      }
+    }
+  }
   /*
   async withdrawRewards(address: string, amount: bigint) {
     let nonce = await this.getNonce();

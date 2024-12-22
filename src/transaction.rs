@@ -45,6 +45,7 @@ const ERROR_TRADE_A_BUY_B_SELL: u32 = 6;
 const ERROR_LIMIT_ORDER_PRICE_NOT_MATCH: u32 = 7;
 const ERROR_SAME_TRADE_ORDER_PID: u32 = 8;
 const ERROR_A_AND_B_ORDER_BOTH_MARKET: u32 = 9;
+const ERROR_ORDER_MARKET_NOT_MATCH: u32 = 2;
 const ERROR_BALANCE_NOT_MATCH: u32 = 3;
 const ERROR_PLAYER_IS_NOT_ADMIN: u32 = 0xffffffff;
 
@@ -354,7 +355,7 @@ impl Transaction {
                 }
                 let mut a_order = a_order.unwrap();
                 let mut b_order = b_order.unwrap();
-                if a_order.is_live() || b_order.is_live() {
+                if !(a_order.is_live() && b_order.is_live()) {
                     zkwasm_rust_sdk::dbg!("add trade, a order or b order is not live\n");
                     return ERROR_ORDER_NOT_LIVE;
                 }
@@ -368,6 +369,12 @@ impl Transaction {
                     zkwasm_rust_sdk::dbg!("add trade, a order or b order is closed\n");
                     return ERROR_MARKET_NOT_EXIST;
                 }
+
+                if a_order.market_id != b_order.market_id {
+                    zkwasm_rust_sdk::dbg!("add trade, a order and b order is not in same market\n");
+                    return ERROR_ORDER_MARKET_NOT_MATCH;
+                }
+
                 if !(a_order.is_buy() && b_order.is_sell()) {
                     zkwasm_rust_sdk::dbg!("add trade, a order is not buy or b order is not sell\n");
                     return ERROR_TRADE_A_BUY_B_SELL;
@@ -407,9 +414,7 @@ impl Transaction {
                     player_b.data.load_position(market.token_b, &b_order.pid);
                 let a_cost = params.a_actual_amount;
                 let b_cost = params.b_actual_amount;
-                if a_order.lock_balance < params.a_actual_amount
-                    || b_order.lock_balance < params.b_actual_amount
-                {
+                if !(a_order.lock_balance < params.a_actual_amount && b_order.lock_balance < params.b_actual_amount) {
                     zkwasm_rust_sdk::dbg!("balance not match\n");
                     return ERROR_BALANCE_NOT_MATCH;
                 }
@@ -551,7 +556,9 @@ impl Transaction {
         let mut position = player.unwrap().data.load_position(token_idx, pid);
         // todo check overflow
         if position.balance < cost {
-            zkwasm_rust_sdk::dbg!("add market order, balance is not enough\n");
+            let balance = position.balance;
+
+            zkwasm_rust_sdk::dbg!("add market order, token_idx {} balance {} is not enough, cost {}\n", token_idx, balance, cost);
             return Err(ERROR_BALANCE_NOT_ENOUGH);
         }
 
@@ -561,7 +568,7 @@ impl Transaction {
         let order_id = unsafe { STATE.get_new_order_id() };
         let order = Order::new(
             order_id,
-            Order::TYPE_LIMIT,
+            Order::TYPE_MARKET,
             Order::STATUS_LIVE,
             *pid,
             params.market_id,
