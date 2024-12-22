@@ -5,9 +5,30 @@ function bytesToHex(bytes: Array<number>): string  {
     return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
 }
 
-const CMD_INSTALL_PLAYER = 1n;
+const CMD_ADD_TOKEN = 1n;
+const CMD_ADD_MARKET = 2n;
+const CMD_DEPOSIT = 3n;
+
+const CMD_INSTALL_PLAYER = 4n;
 const CMD_INC_COUNTER = 2n;
 
+export class TransactionData {
+  nonce: bigint;
+  command: bigint;
+  params: Array<bigint>;
+  constructor(nonce: bigint, command: bigint, params: Array<bigint>) {
+    this.nonce = nonce;
+    this.command = command;
+    this.params = params;
+  }
+  encodeCommand() {
+    const cmd = (this.nonce << 16n) + (BigInt(this.params.length + 1) << 8n) + this.command;
+    let buf = [this.command];
+    buf = buf.concat(this.params);
+    const barray = new BigUint64Array(buf);
+    return barray;
+  }
+}
 
 function createCommand(nonce: bigint, command: bigint, feature: bigint) {
   return (nonce << 16n) + (feature << 8n) + command;
@@ -63,9 +84,65 @@ export class Player {
   async register() {
     let nonce = await this.getNonce();
     try {
+      let txData = new TransactionData(nonce, CMD_INSTALL_PLAYER, [1n, 2n, 3n, 4n,5n]);
       let result = await this.rpc.sendTransaction(
-        new BigUint64Array([createCommand(nonce, CMD_INSTALL_PLAYER, 0n), 0n, 0n, 0n, 0n, 0n]),
+          txData.encodeCommand(),
+        // new BigUint64Array([createCommand(nonce, CMD_INSTALL_PLAYER, 0n), 0n, 0n, 0n, 1n, 2n,3n,4n]),
         this.processingKey
+      );
+      return result
+    } catch(e) {
+      if (e instanceof Error) {
+        console.log(e.message);
+      }
+    }
+  }
+
+  async addToken(idx: bigint, address: string) {
+    let nonce = await this.getNonce();
+    try {
+      let addr = new LeHexBN(address);
+      let params = [idx];
+      params.push(...addr.toU64Array(3));
+      let txData = new TransactionData(nonce, CMD_ADD_TOKEN, params);
+      let result = await this.rpc.sendTransaction(
+          txData.encodeCommand(),
+          this.processingKey
+      );
+      return result
+    } catch(e) {
+      if (e instanceof Error) {
+        console.log("Error", e.message);
+      }
+    }
+  }
+
+  async addMarket(tokenAIdx: bigint, tokenBIdx: bigint) {
+    let nonce = await this.getNonce();
+    try {
+      let params = [tokenAIdx, tokenBIdx];
+      let txData = new TransactionData(nonce, CMD_ADD_MARKET, params);
+      let result = await this.rpc.sendTransaction(
+          txData.encodeCommand(),
+          this.processingKey
+      );
+      return result
+    } catch(e) {
+      if (e instanceof Error) {
+        console.log(e.message);
+      }
+    }
+  }
+
+  async deposit(pid: string, tokenAIdx: bigint, amount: bigint) {
+    let nonce = await this.getNonce();
+    try {
+      let pid2 = new LeHexBN(pid).toU64Array();
+      let params = [pid2[1], pid2[2], tokenAIdx, amount];
+      let txData = new TransactionData(nonce, CMD_DEPOSIT, params);
+      let result = await this.rpc.sendTransaction(
+          txData.encodeCommand(),
+          this.processingKey
       );
       return result
     } catch(e) {

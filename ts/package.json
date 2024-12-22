@@ -8,7 +8,7 @@
     "typescript": "^5.4.5",
     "zkwasm-minirollup-rpc": "github:cuiweixie/zkWasm-minirollup-rpc",
     "zkwasm-service-cli": "git+https://github.com/DelphinusLab/zkWasm-service-cli.git",
-    "zkwasm-ts-server": "https://gitpkg.vercel.app/cuiweixie/zkwasm-mini-rollup/ts?dev"
+    "zkwasm-ts-server": "https://gitpkg.vercel.app/cuiweixie/zkwasm-mini-rollup/ts\\?dev"
   },
   "scripts": {
     "build": "npx tsc"
