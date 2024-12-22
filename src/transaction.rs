@@ -347,6 +347,12 @@ impl Transaction {
             }
             Data::AddTrade(ref params) => {
                 zkwasm_rust_sdk::dbg!("add trade\n");
+
+                if !Self::is_admin(pkey) {
+                    zkwasm_rust_sdk::dbg!("you are not admin\n");
+                    return ERROR_PLAYER_IS_NOT_ADMIN;
+                }
+
                 let a_order = Order::load(params.a_order_id);
                 let b_order = Order::load(params.b_order_id);
                 if a_order.is_none() || b_order.is_none() {
