@@ -10,6 +10,13 @@ const CMD_ADD_MARKET = 2n;
 const CMD_DEPOSIT = 3n;
 
 const CMD_INSTALL_PLAYER = 4n;
+const ADD_LIMIT_ORDER = 5n;
+const ADD_MARKET_ORDER = 6n;
+const CANCEL_ORDER = 7n;
+const CLOSE_MARKET = 8n;
+const TRANSFER = 9n;
+const WITHDRAW = 10n;
+const ADD_TRADE = 11n;
 const CMD_INC_COUNTER = 2n;
 
 export class TransactionData {
@@ -152,6 +159,22 @@ export class Player {
     }
   }
 
+  async addLimitOrder(marketId: bigint, flag: bigint, limitPrice: bigint, amount: bigint) {
+    let nonce = await this.getNonce();
+    try {
+      let params = [marketId, flag, limitPrice, amount];
+      let txData = new TransactionData(nonce, ADD_LIMIT_ORDER, params);
+      let result = await this.rpc.sendTransaction(
+          txData.encodeCommand(),
+          this.processingKey
+      );
+      return result
+    } catch(e) {
+      if (e instanceof Error) {
+        console.log(e.message);
+      }
+    }
+  }
   /*
   async withdrawRewards(address: string, amount: bigint) {
     let nonce = await this.getNonce();

@@ -24,6 +24,10 @@ async function main() {
   console.log("Deposit 10000 tokens to the player");
   state = await player.deposit("428c73246352807b9b31b84ff788103abc7932b72801a1b23734e7915cc7f610", 0n, 10000n);
   console.log(state);
+
+  console.log("add limit order");
+  state = await player.addLimitOrder(1n, 1n, 100n, 100n);
+  console.log(state);
 }
 
 main();
