@@ -1,19 +1,17 @@
-use std::slice::IterMut;
-use std::u64;
-use zkwasm_rest_abi::{MERKLE_MAP, WithdrawInfo};
-use zkwasm_rust_sdk::require;
 use crate::config::ADMIN_PUBKEY;
 use crate::player::HelloWorldPlayer;
-use crate::settlement::{SETTLEMENT, SettlementInfo};
+use crate::settlement::{SettlementInfo, SETTLEMENT};
 use crate::state::STATE;
 use crate::StorageData;
+use std::slice::IterMut;
+use std::u64;
+use zkwasm_rest_abi::{WithdrawInfo, MERKLE_MAP};
+use zkwasm_rust_sdk::require;
 
 pub struct Transaction {
     pub nonce: u64,
     pub data: Data,
 }
-
-
 
 const AUTOTICK: u64 = 0;
 const ADD_TOKEN: u64 = 1;
@@ -29,28 +27,26 @@ const TRANSFER: u64 = 9;
 const WITHDRAW: u64 = 10;
 const ADD_TRADE: u64 = 11;
 
-
 // TODO fix error number
-const ERROR_PLAYER_ALREADY_EXIST:u32 = 1;
-const ERROR_TOKEN_ALREADY_EXIST:u32 = 1;
+const ERROR_PLAYER_ALREADY_EXIST: u32 = 1;
+const ERROR_TOKEN_ALREADY_EXIST: u32 = 1;
 const ERROR_TOKEN_NOT_EXIST: u32 = 1;
-const ERROR_PLAYER_NOT_EXIST:u32 = 2;
-const ERROR_MARKET_NOT_EXIST:u32 = 2;
+const ERROR_PLAYER_NOT_EXIST: u32 = 2;
+const ERROR_MARKET_NOT_EXIST: u32 = 2;
 
+const ERROR_BALANCE_NOT_ENOUGH: u32 = 3;
 
-const ERROR_BALANCE_NOT_ENOUGH:u32 = 3;
+const ERROR_PLAYER_ORDER_NOT_MATCH: u32 = 4;
 
-const ERROR_PLAYER_ORDER_NOT_MATCH:u32 = 4;
+const ERROR_ORDER_NOT_LIVE: u32 = 4;
 
-const ERROR_ORDER_NOT_LIVE:u32 = 4;
-
-const ERROR_ORDER_NOT_EXIT:u32 = 5;
-const ERROR_TRADE_A_BUY_B_SELL:u32 = 6;
-const ERROR_LIMIT_ORDER_PRICE_NOT_MATCH:u32 = 7;
-const ERROR_SAME_TRADE_ORDER_PID:u32 = 8;
-const ERROR_A_AND_B_ORDER_BOTH_MARKET:u32 = 9;
-const ERROR_BALANCE_NOT_MATCH:u32 = 3;
-const ERROR_PLAYER_IS_NOT_ADMIN:u32 = 0xffffffff;
+const ERROR_ORDER_NOT_EXIT: u32 = 5;
+const ERROR_TRADE_A_BUY_B_SELL: u32 = 6;
+const ERROR_LIMIT_ORDER_PRICE_NOT_MATCH: u32 = 7;
+const ERROR_SAME_TRADE_ORDER_PID: u32 = 8;
+const ERROR_A_AND_B_ORDER_BOTH_MARKET: u32 = 9;
+const ERROR_BALANCE_NOT_MATCH: u32 = 3;
+const ERROR_PLAYER_IS_NOT_ADMIN: u32 = 0xffffffff;
 
 const COMMON_PREFIX: u64 = 0xffffffffffffffff;
 const ORDER_PREFIX: u64 = 0xfffffffffffffffd;
@@ -69,9 +65,9 @@ pub fn u64_array_to_address(arr: &[u64; 3]) -> [u8; 20] {
 impl Transaction {
     pub fn decode_error(e: u32) -> &'static str {
         match e {
-           ERROR_PLAYER_NOT_EXIST => "PlayerNotExist",
-           ERROR_PLAYER_ALREADY_EXIST => "PlayerAlreadyExist",
-           _ => "Unknown"
+            ERROR_PLAYER_NOT_EXIST => "PlayerNotExist",
+            ERROR_PLAYER_ALREADY_EXIST => "PlayerAlreadyExist",
+            _ => "Unknown",
         }
     }
     pub fn decode(params: &[u64]) -> Self {
@@ -84,25 +80,19 @@ impl Transaction {
         let data = match command {
             ADD_TOKEN => {
                 unsafe {
-                  require(params.len() == 5);
+                    require(params.len() == 5);
                 };
                 let token_idx = params[1] as u32;
                 let mut address = u64_array_to_address(&[params[2], params[3], params[4]]);
-                Data::AddToken(AddTokenParams {
-                    token_idx,
-                    address,
-                })
+                Data::AddToken(AddTokenParams { token_idx, address })
             }
             ADD_MARKET => {
                 unsafe {
-                  require(params.len() == 3);
+                    require(params.len() == 3);
                 };
                 let token_a = params[1] as u32;
                 let token_b = params[2] as u32;
-                Data::AddMarket(AddMarketParams {
-                    token_a,
-                    token_b,
-                })
+                Data::AddMarket(AddMarketParams { token_a, token_b })
             }
 
             DEPOSIT_TOKEN => {
@@ -118,67 +108,48 @@ impl Transaction {
                 })
             }
 
-            REGISTER_PLAYER => {
-                Data::RegisterPlayer
-            }
+            REGISTER_PLAYER => Data::RegisterPlayer,
 
-            ADD_LIMIT_ORDER => {
-                Data::AddLimitOrder(AddLimitOrderParams {
-                    market_id: params[1],
-                    flag: params[2],
-                    limit_price: params[3],
-                    amount: params[4],
-                })
-            }
-            ADD_MARKET_ORDER => {
-                Data::AddMarketOrder(AddMarketOrderParams {
-                    market_id: params[1],
-                    flag: params[2],
-                    amount: params[3],
-                })
-            }
-            CANCEL_ORDER => {
-                Data::CancelOrder(CancelOrderParams {
-                    order_id: params[1],
-                })
-            }
-            CLOSE_MARKET => {
-                Data::CloseMarket(CloseMarketParams {
-                    market_id: params[1],
-                })
-            }
-            TRANSFER => {
-                Data::Transfer(TransferParams {
-                    pid_1: params[1],
-                    pid_2: params[2],
-                    token_idx: params[3] as u32,
-                    amount: params[4],
-                })
-            }
-            WITHDRAW => {
-                Data::Withdraw(WithdrawParams {
-                    token_idx: params[1] as u32,
-                    to_address: u64_array_to_address(&[params[2], params[3], params[4]]),
-                    amount: params[5],
-                })
-            }
-            ADD_TRADE => {
-                Data::AddTrade(AddTradeParams {
-                    a_order_id: params[1],
-                    b_order_id: params[2],
-                    a_actual_amount: params[3],
-                    b_actual_amount: params[4],
-                })
-            }
+            ADD_LIMIT_ORDER => Data::AddLimitOrder(AddLimitOrderParams {
+                market_id: params[1],
+                flag: params[2],
+                limit_price: params[3],
+                amount: params[4],
+            }),
+            ADD_MARKET_ORDER => Data::AddMarketOrder(AddMarketOrderParams {
+                market_id: params[1],
+                flag: params[2],
+                amount: params[3],
+            }),
+            CANCEL_ORDER => Data::CancelOrder(CancelOrderParams {
+                order_id: params[1],
+            }),
+            CLOSE_MARKET => Data::CloseMarket(CloseMarketParams {
+                market_id: params[1],
+            }),
+            TRANSFER => Data::Transfer(TransferParams {
+                pid_1: params[1],
+                pid_2: params[2],
+                token_idx: params[3] as u32,
+                amount: params[4],
+            }),
+            WITHDRAW => Data::Withdraw(WithdrawParams {
+                token_idx: params[1] as u32,
+                to_address: u64_array_to_address(&[params[2], params[3], params[4]]),
+                amount: params[5],
+            }),
+            ADD_TRADE => Data::AddTrade(AddTradeParams {
+                a_order_id: params[1],
+                b_order_id: params[2],
+                a_actual_amount: params[3],
+                b_actual_amount: params[4],
+            }),
             _ => {
                 zkwasm_rust_sdk::dbg!("unknown command\n");
                 Data::RegisterPlayer
             }
         };
-        Transaction {
-            nonce,
-            data,
-        }
+        Transaction { nonce, data }
     }
     pub fn install_player(&self, pkey: &[u64; 4]) -> u32 {
         zkwasm_rust_sdk::dbg!("install \n");
@@ -237,7 +208,7 @@ impl Transaction {
                     require(Token::load(params.token_a).is_some());
                     require(Token::load(params.token_b).is_some());
                 }
-                let new_market_id = unsafe {STATE.get_new_market_id()};
+                let new_market_id = unsafe { STATE.get_new_market_id() };
                 let market = Market::new(new_market_id, params.token_a, params.token_b);
                 market.store();
                 // TODO emit event
@@ -325,8 +296,14 @@ impl Transaction {
                     zkwasm_rust_sdk::dbg!("transfer, token not exist\n");
                     return ERROR_TOKEN_NOT_EXIST;
                 }
-                let mut position_1 = player_1.unwrap().data.load_position(params.token_idx, &[pid_1, pid_2]);
-                let mut position_2 = player_2.unwrap().data.load_position(params.token_idx, &[params.pid_1, params.pid_2]);
+                let mut position_1 = player_1
+                    .unwrap()
+                    .data
+                    .load_position(params.token_idx, &[pid_1, pid_2]);
+                let mut position_2 = player_2
+                    .unwrap()
+                    .data
+                    .load_position(params.token_idx, &[params.pid_1, params.pid_2]);
                 if position_1.balance < params.amount {
                     zkwasm_rust_sdk::dbg!("transfer, balance not enough\n");
                     return ERROR_BALANCE_NOT_ENOUGH;
@@ -349,7 +326,10 @@ impl Transaction {
                     zkwasm_rust_sdk::dbg!("withdraw, token not exist\n");
                     return ERROR_TOKEN_NOT_EXIST;
                 }
-                let mut position = player.unwrap().data.load_position(params.token_idx, &[pid_1, pid_2]);
+                let mut position = player
+                    .unwrap()
+                    .data
+                    .load_position(params.token_idx, &[pid_1, pid_2]);
                 if position.balance < params.amount {
                     zkwasm_rust_sdk::dbg!("withdraw, balance not enough\n");
                     return ERROR_BALANCE_NOT_ENOUGH;
@@ -388,10 +368,10 @@ impl Transaction {
                     zkwasm_rust_sdk::dbg!("add trade, a order or b order is closed\n");
                     return ERROR_MARKET_NOT_EXIST;
                 }
-               if !(a_order.is_buy() && b_order.is_sell()) {
-                   zkwasm_rust_sdk::dbg!("add trade, a order is not buy or b order is not sell\n");
-                   return ERROR_TRADE_A_BUY_B_SELL;
-               }
+                if !(a_order.is_buy() && b_order.is_sell()) {
+                    zkwasm_rust_sdk::dbg!("add trade, a order is not buy or b order is not sell\n");
+                    return ERROR_TRADE_A_BUY_B_SELL;
+                }
                 if a_order.pid == b_order.pid {
                     zkwasm_rust_sdk::dbg!("add trade, a order and b order is from same user\n");
                     return ERROR_SAME_TRADE_ORDER_PID;
@@ -411,17 +391,25 @@ impl Transaction {
                         return ERROR_LIMIT_ORDER_PRICE_NOT_MATCH;
                     }
                     if a_order.price * params.b_actual_amount != params.a_actual_amount {
-                        zkwasm_rust_sdk::dbg!("both a and b is limit order but price not equal 2\n");
+                        zkwasm_rust_sdk::dbg!(
+                            "both a and b is limit order but price not equal 2\n"
+                        );
                         return ERROR_LIMIT_ORDER_PRICE_NOT_MATCH;
                     }
                 }
-                let mut player_a_token_a_position = player_a.data.load_position(market.token_a, &a_order.pid);
-                let mut player_a_token_b_position = player_a.data.load_position(market.token_b, &a_order.pid);
-                let mut player_b_token_a_position = player_b.data.load_position(market.token_a, &b_order.pid);
-                let mut player_b_token_b_position = player_b.data.load_position(market.token_b, &b_order.pid);
+                let mut player_a_token_a_position =
+                    player_a.data.load_position(market.token_a, &a_order.pid);
+                let mut player_a_token_b_position =
+                    player_a.data.load_position(market.token_b, &a_order.pid);
+                let mut player_b_token_a_position =
+                    player_b.data.load_position(market.token_a, &b_order.pid);
+                let mut player_b_token_b_position =
+                    player_b.data.load_position(market.token_b, &b_order.pid);
                 let a_cost = params.a_actual_amount;
                 let b_cost = params.b_actual_amount;
-                if a_order.lock_balance < params.a_actual_amount || b_order.lock_balance < params.b_actual_amount {
+                if a_order.lock_balance < params.a_actual_amount
+                    || b_order.lock_balance < params.b_actual_amount
+                {
                     zkwasm_rust_sdk::dbg!("balance not match\n");
                     return ERROR_BALANCE_NOT_MATCH;
                 }
@@ -460,8 +448,14 @@ impl Transaction {
                 player_a_token_b_position.store(market.token_b, &a_order.pid);
                 player_b_token_a_position.store(market.token_a, &b_order.pid);
                 player_b_token_b_position.store(market.token_b, &b_order.pid);
-                let trace_id = unsafe {STATE.get_new_trade_id()};
-                let trade = Trade::new(trace_id, a_order.id, b_order.id, params.a_actual_amount, params.b_actual_amount);
+                let trace_id = unsafe { STATE.get_new_trade_id() };
+                let trade = Trade::new(
+                    trace_id,
+                    a_order.id,
+                    b_order.id,
+                    params.a_actual_amount,
+                    params.b_actual_amount,
+                );
                 trade.store();
                 0
             }
@@ -510,7 +504,18 @@ impl Transaction {
         position.inc_lock_balance(cost);
 
         let order_id = unsafe { STATE.get_new_order_id() };
-        let order = Order::new(order_id, Order::TYPE_LIMIT, Order::STATUS_LIVE, *pid, params.market_id, params.flag as u8, 0, params.limit_price, params.amount, 0);
+        let order = Order::new(
+            order_id,
+            Order::TYPE_LIMIT,
+            Order::STATUS_LIVE,
+            *pid,
+            params.market_id,
+            params.flag as u8,
+            0,
+            params.limit_price,
+            params.amount,
+            0,
+        );
         position.store(token_idx, pid);
         order.store();
         Ok(0)
@@ -554,7 +559,18 @@ impl Transaction {
         position.inc_lock_balance(cost);
 
         let order_id = unsafe { STATE.get_new_order_id() };
-        let order = Order::new(order_id, Order::TYPE_LIMIT, Order::STATUS_LIVE, *pid, params.market_id, params.flag as u8, 0, 0, params.amount, 0);
+        let order = Order::new(
+            order_id,
+            Order::TYPE_LIMIT,
+            Order::STATUS_LIVE,
+            *pid,
+            params.market_id,
+            params.flag as u8,
+            0,
+            0,
+            params.amount,
+            0,
+        );
         position.store(token_idx, pid);
         order.store();
         Ok(0)
@@ -588,7 +604,10 @@ impl Transaction {
             token_idx = market.unwrap().token_b;
         };
 
-        let mut position = HelloWorldPlayer::get_from_pid(pid).unwrap().data.load_position(token_idx, pid);
+        let mut position = HelloWorldPlayer::get_from_pid(pid)
+            .unwrap()
+            .data
+            .load_position(token_idx, pid);
         position.inc_balance(lock_balance);
         position.dec_lock_balance(lock_balance);
 
@@ -716,7 +735,7 @@ impl Market {
         let kvpair = unsafe { &mut MERKLE_MAP };
         let mut data = kvpair.get(&Self::get_key(market_id));
         if data.is_empty() {
-            return None
+            return None;
         }
         let mut u64data = data.iter_mut();
         Some(Self::from_data(&mut u64data))
@@ -762,10 +781,7 @@ pub struct Token {
 
 impl Token {
     pub fn new(token_idx: u32, address: [u8; 20]) -> Self {
-        Self {
-            token_idx,
-            address,
-        }
+        Self { token_idx, address }
     }
 
     pub fn get_key(token_idx: u32) -> [u64; 4] {
@@ -786,7 +802,7 @@ impl Token {
         let kvpair = unsafe { &mut MERKLE_MAP };
         let mut data = kvpair.get(&Self::get_key(token_idx));
         if data.is_empty() {
-           return None
+            return None;
         }
         let mut u64data = data.iter_mut();
         zkwasm_rust_sdk::dbg!("end token\n");
@@ -798,14 +814,15 @@ impl StorageData for Token {
     fn from_data(u64data: &mut IterMut<u64>) -> Self {
         let token_idx = *u64data.next().unwrap() as u32;
         let mut address = [0u8; 20];
-        let data = &[*u64data.next().unwrap(), *u64data.next().unwrap(), *u64data.next().unwrap()];
+        let data = &[
+            *u64data.next().unwrap(),
+            *u64data.next().unwrap(),
+            *u64data.next().unwrap(),
+        ];
         for i in 0..20 {
             address[i] = (data[i / 8] >> (i % 8)) as u8;
         }
-        Token {
-            token_idx,
-            address,
-        }
+        Token { token_idx, address }
     }
 
     fn to_data(&self, data: &mut Vec<u64>) {
@@ -879,7 +896,18 @@ impl Order {
     pub const FLAG_SELL: u8 = 0;
     pub const FLAG_BUY: u8 = 1;
 
-    pub fn new(id: u64, type_: u8, status: u8, pid: [u64; 2], market_id: u64, flag: u8, lock_balance: u64, price: u64, amount: u64, already_deal_amount: u64) -> Self {
+    pub fn new(
+        id: u64,
+        type_: u8,
+        status: u8,
+        pid: [u64; 2],
+        market_id: u64,
+        flag: u8,
+        lock_balance: u64,
+        price: u64,
+        amount: u64,
+        already_deal_amount: u64,
+    ) -> Self {
         Self {
             id,
             type_,
@@ -943,7 +971,7 @@ impl Order {
         let kvpair = unsafe { &mut MERKLE_MAP };
         let mut data = kvpair.get(&Self::get_key(id));
         if data.is_empty() {
-            return None
+            return None;
         }
         let mut u64data = data.iter_mut();
         Some(Self::from_data(&mut u64data))
@@ -1010,7 +1038,13 @@ pub struct Trade {
 }
 
 impl Trade {
-    pub fn new(trade_id: u64, a_order_id: u64, b_order_id: u64, a_actual_amount: u64, b_actual_amount: u64) -> Self {
+    pub fn new(
+        trade_id: u64,
+        a_order_id: u64,
+        b_order_id: u64,
+        a_actual_amount: u64,
+        b_actual_amount: u64,
+    ) -> Self {
         Self {
             trade_id,
             a_order_id,
@@ -1038,7 +1072,7 @@ impl Trade {
         let kvpair = unsafe { &mut MERKLE_MAP };
         let mut data = kvpair.get(&Self::get_key(trade_id));
         if data.is_empty() {
-            return None
+            return None;
         }
         let mut u64data = data.iter_mut();
         Some(Self::from_data(&mut u64data))

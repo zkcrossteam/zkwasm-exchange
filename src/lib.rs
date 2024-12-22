@@ -1,12 +1,12 @@
+use transaction::Transaction;
 use wasm_bindgen::prelude::*;
 use zkwasm_rest_abi::*;
-use transaction::Transaction;
 
 pub mod config;
-pub mod state;
-pub mod settlement;
-mod transaction;
 mod player;
+pub mod settlement;
+pub mod state;
+mod transaction;
 
 use crate::config::Config;
 use crate::state::State;

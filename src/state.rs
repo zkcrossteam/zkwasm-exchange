@@ -1,8 +1,8 @@
-use serde::Serialize;
 use crate::player::HelloWorldPlayer;
 use crate::settlement::SettlementInfo;
+use serde::Serialize;
 
-#[derive (Serialize)]
+#[derive(Serialize)]
 pub struct State {
     pub counter: u64,
     pub total_fee: u64,
@@ -14,7 +14,9 @@ pub struct State {
 
 impl State {
     pub fn get_state(pkey: Vec<u64>) -> String {
-        let player = HelloWorldPlayer::get_from_pid(&HelloWorldPlayer::pkey_to_pid(&pkey.try_into().unwrap()));
+        let player = HelloWorldPlayer::get_from_pid(&HelloWorldPlayer::pkey_to_pid(
+            &pkey.try_into().unwrap(),
+        ));
         serde_json::to_string(&player).unwrap()
     }
 
@@ -46,7 +48,7 @@ impl State {
     }
 
     pub fn preempt() -> bool {
-        let state = unsafe {&STATE};
+        let state = unsafe { &STATE };
         return state.counter % 20 == 0;
     }
 
@@ -76,11 +78,10 @@ impl State {
     }
 }
 
-pub static mut STATE: State  = State {
+pub static mut STATE: State = State {
     counter: 0,
     total_fee: 0,
     market_id_counter: 0,
     order_id_counter: 0,
     trade_id_counter: 0,
 };
-

@@ -1,7 +1,7 @@
-use std::collections::HashMap;
 use serde::Serialize;
-use zkwasm_rest_abi::{MERKLE_MAP, Player, StorageData};
+use std::collections::HashMap;
 use std::slice::IterMut;
+use zkwasm_rest_abi::{Player, StorageData, MERKLE_MAP};
 
 const POSITION_PREFIX: u64 = 0xfffffffffffffffe;
 
@@ -67,7 +67,7 @@ impl StorageData for Position {
         let lock_balance = *u64data.next().unwrap();
         Position {
             balance,
-           lock_balance,
+            lock_balance,
         }
     }
     fn to_data(&self, data: &mut Vec<u64>) {
@@ -79,7 +79,7 @@ impl StorageData for Position {
 #[derive(Debug, Serialize)]
 pub struct PlayerData {
     pub counter: u64,
-    pub positions: HashMap<u32, Position>
+    pub positions: HashMap<u32, Position>,
 }
 
 impl PlayerData {
@@ -103,7 +103,7 @@ impl Default for PlayerData {
     fn default() -> Self {
         Self {
             counter: 0,
-            positions: HashMap::new()
+            positions: HashMap::new(),
         }
     }
 }
