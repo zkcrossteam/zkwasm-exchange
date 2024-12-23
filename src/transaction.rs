@@ -5,6 +5,7 @@ use crate::state::STATE;
 use crate::StorageData;
 use std::slice::IterMut;
 use std::u64;
+use serde::Serialize;
 use zkwasm_rest_abi::{WithdrawInfo, MERKLE_MAP};
 use zkwasm_rust_sdk::require;
 
@@ -420,7 +421,7 @@ impl Transaction {
                     player_b.data.load_position(market.token_b, &b_order.pid);
                 let a_cost = params.a_actual_amount;
                 let b_cost = params.b_actual_amount;
-                if !(a_order.lock_balance < params.a_actual_amount && b_order.lock_balance < params.b_actual_amount) {
+                if !(a_order.lock_balance > params.a_actual_amount && b_order.lock_balance > params.b_actual_amount) {
                     zkwasm_rust_sdk::dbg!("balance not match\n");
                     return ERROR_BALANCE_NOT_MATCH;
                 }
@@ -431,12 +432,14 @@ impl Transaction {
                     b_order.already_deal_amount += params.b_actual_amount;
                 } else if a_order.is_limit_order() && b_order.is_market_order() {
                     // 第二种情况 a order 是 limit order, b order 是 market order
+                    // todo check price
                     a_order.lock_balance -= params.a_actual_amount;
                     b_order.lock_balance -= params.b_actual_amount;
                     a_order.already_deal_amount += params.b_actual_amount;
                     b_order.already_deal_amount += params.b_actual_amount;
                 } else if a_order.is_market_order() && b_order.is_limit_order() {
                     // 第三种情况 a order 是 market order, b order 是 limit order
+                    // todo check price
                     a_order.lock_balance -= params.a_actual_amount;
                     b_order.lock_balance -= params.b_actual_amount;
                     a_order.already_deal_amount += params.a_actual_amount;
@@ -522,7 +525,7 @@ impl Transaction {
             *pid,
             params.market_id,
             params.flag as u8,
-            0,
+            cost,
             params.limit_price,
             params.amount,
             0,
@@ -579,7 +582,7 @@ impl Transaction {
             *pid,
             params.market_id,
             params.flag as u8,
-            0,
+            cost,
             0,
             params.amount,
             0,
@@ -850,7 +853,7 @@ impl StorageData for Token {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Order {
     /// 唯一id
     pub id: u64,
@@ -872,6 +875,9 @@ pub struct Order {
 
     /// 锁定的balance
     pub lock_balance: u64,
+
+    /// 锁定的手续费(usdt)
+    pub lock_fee: u64,
 
     /// limit order 的限价
     /// 买的时候，是买一个b token的价格
@@ -929,6 +935,7 @@ impl Order {
             market_id,
             flag,
             lock_balance,
+            lock_fee,
             price,
             amount,
             already_deal_amount,
@@ -1032,7 +1039,7 @@ impl StorageData for Order {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Trade {
     /// 唯一id
     pub trade_id: u64,

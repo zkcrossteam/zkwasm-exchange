@@ -44,9 +44,10 @@ async function main() {
   console.log(state);
 
   console.log("add trade");
-  state = await player.addTrace(3n, 4n, 100n, 100n);
+  // @ts-ignore
+  state = await player.addTrace(BigInt(state.state.order_id_counter - 1), BigInt(state.state.order_id_counter), 100n, 100n);
   console.log(state);
-
+  console.log(JSON.stringify(state, null, 2));
 }
 
 main();

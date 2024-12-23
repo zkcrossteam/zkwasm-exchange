@@ -11,9 +11,9 @@ lazy_static::lazy_static! {
 
 #[derive(Serialize, Clone)]
 pub struct Config {
-    version: &'static str,
-    fee: u64,
-    fee_token_idx: u32,
+    pub version: &'static str,
+    pub fee: u64,
+    pub fee_token_idx: u32,
 }
 lazy_static::lazy_static! {
     pub static ref CONFIG: Config = Config {

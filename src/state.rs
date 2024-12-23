@@ -2,6 +2,7 @@ use crate::player::HelloWorldPlayer;
 use crate::settlement::SettlementInfo;
 use serde::Serialize;
 use zkwasm_rest_abi::{MERKLE_MAP, StorageData};
+use crate::transaction::{Order, Trade};
 
 #[derive(Serialize)]
 pub struct State {
@@ -11,6 +12,20 @@ pub struct State {
     pub order_id_counter: u64,
     pub trade_id_counter: u64,
     // add debug order, trade, market info
+}
+
+const debug: bool = true;
+
+#[derive(Serialize)]
+pub struct StateDebug {
+    pub counter: u64,
+    pub total_fee: u64,
+    pub market_id_counter: u64,
+    pub order_id_counter: u64,
+    pub trade_id_counter: u64,
+    // add debug order, trade, market info
+    pub orders: Vec<Order>,
+    pub trades: Vec<Trade>,
 }
 
 impl State {
@@ -48,7 +63,34 @@ impl State {
 
     pub fn snapshot() -> String {
         let state = unsafe { &STATE };
-        serde_json::to_string(&state).unwrap()
+        if !debug {
+            return serde_json::to_string(state).unwrap();
+        }
+        let mut state_debug = StateDebug {
+            counter: state.counter,
+            total_fee: state.total_fee,
+            market_id_counter: state.market_id_counter,
+            order_id_counter: state.order_id_counter,
+            trade_id_counter: state.trade_id_counter,
+            orders: vec![],
+            trades: vec![],
+        };
+
+        for i in  1..(state.order_id_counter + 1) {
+            let order = Order::load(i);
+            if order.is_some() {
+                state_debug.orders.push(order.unwrap());
+            }
+        }
+
+        for i in  1..(state.trade_id_counter + 1) {
+            let trade = Trade::load(i);
+            if trade.is_some() {
+                state_debug.trades.push(trade.unwrap());
+            }
+        }
+
+        serde_json::to_string(&state_debug).unwrap()
     }
 
     pub fn preempt() -> bool {
@@ -95,6 +137,8 @@ impl State {
             unsafe { STATE = State::from_data(&mut u64data) };
         }
     }
+
+
 }
 
 impl StorageData for State {

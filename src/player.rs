@@ -89,13 +89,13 @@ impl PlayerData {
         }
     }
 
-    pub fn load_position(&mut self, token_idx: u32, pid: &[u64; 2]) -> Position {
+    pub fn load_position(&mut self, token_idx: u32, pid: &[u64; 2]) -> &Position {
         if let Some(p) = self.positions.get(&token_idx) {
-            return p.clone();
+            return p;
         }
         let p = Position::load(token_idx, pid);
         self.positions.insert(token_idx, p.clone());
-        p
+        self.positions.get(&token_idx).unwrap()
     }
 }
 
