@@ -227,6 +227,26 @@ export class Player {
       }
     }
   }
+
+  async withdraw(idx: bigint, address: string, amount:bigint) {
+    let nonce = await this.getNonce();
+    try {
+      let addr = new LeHexBN(address);
+      let params = [idx];
+      params.push(...addr.toU64Array(3));
+      params.push(amount);
+      let txData = new TransactionData(nonce, WITHDRAW, params);
+      let result = await this.rpc.sendTransaction(
+          txData.encodeCommand(),
+          this.processingKey
+      );
+      return result
+    } catch(e) {
+      if (e instanceof Error) {
+        console.log("Error", e.message);
+      }
+    }
+  }
   /*
   async withdrawRewards(address: string, amount: bigint) {
     let nonce = await this.getNonce();

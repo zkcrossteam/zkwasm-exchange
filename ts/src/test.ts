@@ -55,10 +55,14 @@ async function main() {
   console.log(JSON.stringify(state.player, null, 2));
   state = await playerB.getState();
   console.log(JSON.stringify(state.player, null, 2));
+  console.log("transfer 1 tokens 0 to the playerB");
   state = await player.transfer("0c839e6ff76723263a6261ce07813303fd2895a07c67369f657fcf6af320292b", 0n, 1n);
   console.log(JSON.stringify(state.player, null, 2));
 
   state = await playerB.getState();
+  console.log(JSON.stringify(state.player, null, 2));
+  console.log("withdraw 1 tokens 0 from the playerB");
+  state = await playerB.withdraw(0n, "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", 1n);
   console.log(JSON.stringify(state.player, null, 2));
 }
 
