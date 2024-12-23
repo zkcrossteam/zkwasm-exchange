@@ -401,23 +401,36 @@ impl Transaction {
                 }
                 let mut player_a = player_a.unwrap();
                 let mut player_b = player_b.unwrap();
+
+                if a_order.is_market_order() && b_order.is_market_order() {
+                    // 第四种情况 a order, b order 都是 market order
+                    zkwasm_rust_sdk::dbg!("balance a order and b order is market order\n");
+                    return ERROR_A_AND_B_ORDER_BOTH_MARKET;
+                }
+
                 // 第一种情况 a order, b order 都是 limit order
                 if a_order.is_limit_order() && b_order.is_limit_order() {
                     if a_order.price != b_order.price {
                         zkwasm_rust_sdk::dbg!("both a and b is limit order but price not equal\n");
                         return ERROR_LIMIT_ORDER_PRICE_NOT_MATCH;
                     }
-                    if a_order.price * params.b_actual_amount != params.a_actual_amount {
-                        zkwasm_rust_sdk::dbg!(
-                            "both a and b is limit order but price not equal 2\n"
-                        );
-                        return ERROR_LIMIT_ORDER_PRICE_NOT_MATCH;
-                    }
                 }
+                let price = if a_order.is_limit_order() {
+                    a_order.price
+                } else {
+                    b_order.price
+                };
+                if price * params.b_actual_amount != params.a_actual_amount {
+                    zkwasm_rust_sdk::dbg!(
+                        "price*b_actual_amount not equal a_actual_amount\n"
+                    );
+                    return ERROR_LIMIT_ORDER_PRICE_NOT_MATCH;
+                }
+
 
                 let a_cost = params.a_actual_amount;
                 let b_cost = params.b_actual_amount;
-                if !(a_order.lock_balance > params.a_actual_amount && b_order.lock_balance > params.b_actual_amount) {
+                if !(a_order.lock_balance >= params.a_actual_amount && b_order.lock_balance >= params.b_actual_amount) {
                     zkwasm_rust_sdk::dbg!("balance not match\n");
                     return ERROR_BALANCE_NOT_MATCH;
                 }
@@ -440,17 +453,12 @@ impl Transaction {
                     b_order.lock_balance -= params.b_actual_amount;
                     a_order.already_deal_amount += params.a_actual_amount;
                     b_order.already_deal_amount += params.b_actual_amount;
-                } else {
-                    // 第四种情况 a order, b order 都是 market order
-                    zkwasm_rust_sdk::dbg!("balance a order and b order is market order\n");
-                    return ERROR_A_AND_B_ORDER_BOTH_MARKET;
                 }
 
                 {
                     let player_a_token_a_position =
                         player_a.data.load_position(market.token_a, &a_order.pid);
                     player_a_token_a_position.dec_lock_balance(a_cost);
-                    player_a_token_a_position.store(market.token_a, &a_order.pid);
                 }
                 let player_a_token_b_position =
                     player_a.data.load_position(market.token_b, &a_order.pid);
@@ -458,20 +466,42 @@ impl Transaction {
                     let player_b_token_a_position =
                         player_b.data.load_position(market.token_a, &b_order.pid);
                     player_b_token_a_position.inc_balance(a_cost);
-                    player_b_token_a_position.store(market.token_a, &b_order.pid);
                 }
                 let player_b_token_b_position =
                     player_b.data.load_position(market.token_b, &b_order.pid);
-
                 player_a_token_b_position.inc_balance(b_cost);
-
                 player_b_token_b_position.dec_lock_balance(b_cost);
+
+                //process fee
+                {
+                    let fee_token_idx = CONFIG.fee_token_idx;
+                    if a_order.lock_fee > 0 {
+                        unsafe {
+                            STATE.total_fee += a_order.lock_fee;
+                        }
+                        let player_a_fee_position =
+                            player_a.data.load_position(fee_token_idx, &a_order.pid);
+                        player_a_fee_position.dec_lock_balance(a_order.lock_fee);
+                        a_order.lock_fee = 0;
+                    }
+
+                    if b_order.lock_fee > 0 {
+                        unsafe {
+                            STATE.total_fee += b_order.lock_fee;
+                        }
+                        let player_b_fee_position =
+                            player_b.data.load_position(fee_token_idx, &b_order.pid);
+                        player_b_fee_position.dec_lock_balance(b_order.lock_fee);
+                        b_order.lock_fee = 0;
+                    }
+                }
+
                 a_order.update_status();
                 a_order.store();
                 b_order.update_status();
                 b_order.store();
-                player_a_token_b_position.store(market.token_b, &a_order.pid);
-                player_b_token_b_position.store(market.token_b, &b_order.pid);
+                player_a.data.store_positions(&player_a.player_id);
+                player_b.data.store_positions(&player_b.player_id);
                 let trace_id = unsafe { STATE.get_new_trade_id() };
                 let trade = Trade::new(
                     trace_id,
@@ -1048,6 +1078,7 @@ impl StorageData for Order {
         let market_id = *u64data.next().unwrap();
         let flag = *u64data.next().unwrap() as u8;
         let lock_balance = *u64data.next().unwrap();
+        let lock_fee = *u64data.next().unwrap();
         let price = *u64data.next().unwrap();
         let amount = *u64data.next().unwrap();
         let already_deal_amount = *u64data.next().unwrap();
@@ -1059,7 +1090,7 @@ impl StorageData for Order {
             market_id,
             flag,
             lock_balance,
-            lock_fee:0,
+            lock_fee,
             price,
             amount,
             already_deal_amount,
@@ -1075,6 +1106,7 @@ impl StorageData for Order {
         data.push(self.market_id);
         data.push(self.flag as u64);
         data.push(self.lock_balance);
+        data.push(self.lock_fee);
         data.push(self.price);
         data.push(self.amount);
         data.push(self.already_deal_amount);

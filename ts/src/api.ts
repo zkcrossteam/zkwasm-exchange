@@ -209,6 +209,24 @@ export class Player {
       }
     }
   }
+
+  async transfer(pid: string, tokenIdx: bigint, amount: bigint) {
+    let nonce = await this.getNonce();
+    try {
+      let pid2 = new LeHexBN(pid).toU64Array();
+      let params = [pid2[1], pid2[2], tokenIdx, amount];
+      let txData = new TransactionData(nonce, TRANSFER, params);
+      let result = await this.rpc.sendTransaction(
+          txData.encodeCommand(),
+          this.processingKey
+      );
+      return result
+    } catch(e) {
+      if (e instanceof Error) {
+        console.log(e.message);
+      }
+    }
+  }
   /*
   async withdrawRewards(address: string, amount: bigint) {
     let nonce = await this.getNonce();

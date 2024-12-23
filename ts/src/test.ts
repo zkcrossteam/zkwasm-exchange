@@ -26,11 +26,11 @@ async function main() {
   console.log(state);
 
   console.log("Deposit 10000 tokens 0 to the player");
-  state = await player.deposit("428c73246352807b9b31b84ff788103abc7932b72801a1b23734e7915cc7f610", 0n, 100000n);
+  state = await player.deposit("428c73246352807b9b31b84ff788103abc7932b72801a1b23734e7915cc7f610", 0n, 300000n);
   console.log(state);
 
   console.log("Deposit 10000 tokens  1 to the player");
-  state = await player.deposit("0c839e6ff76723263a6261ce07813303fd2895a07c67369f657fcf6af320292b", 1n, 10000n);
+  state = await player.deposit("0c839e6ff76723263a6261ce07813303fd2895a07c67369f657fcf6af320292b", 1n, 30000n);
   console.log(state);
 
   playerB.getNonce();
@@ -43,11 +43,23 @@ async function main() {
   state = await playerB.addMarketOrder(1n, 0n, 100n);
   console.log(state);
 
+  console.log(JSON.stringify(state, null, 2));
+
   console.log("add trade");
   // @ts-ignore
-  state = await player.addTrace(BigInt(state.state.order_id_counter - 1), BigInt(state.state.order_id_counter), 100n, 100n);
+  state = await player.addTrace(BigInt(state.state.order_id_counter - 1), BigInt(state.state.order_id_counter), 10000n, 100n);
   console.log(state);
-  console.log(JSON.stringify(state, null, 2));
+  // console.log(JSON.stringify(state, null, 2));
+
+  state = await player.getState();
+  console.log(JSON.stringify(state.player, null, 2));
+  state = await playerB.getState();
+  console.log(JSON.stringify(state.player, null, 2));
+  state = await player.transfer("0c839e6ff76723263a6261ce07813303fd2895a07c67369f657fcf6af320292b", 0n, 1n);
+  console.log(JSON.stringify(state.player, null, 2));
+
+  state = await playerB.getState();
+  console.log(JSON.stringify(state.player, null, 2));
 }
 
 main();

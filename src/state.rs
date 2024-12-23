@@ -33,6 +33,9 @@ impl State {
         let player = HelloWorldPlayer::get_from_pid(&HelloWorldPlayer::pkey_to_pid(
             &pkey.try_into().unwrap(),
         ));
+        if player.is_none() {
+            return  serde_json::to_string(&player).unwrap();
+        }
         let mut player = player.unwrap();
         if DEBUG {
             for i in 0..2 {
