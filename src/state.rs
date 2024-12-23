@@ -14,7 +14,7 @@ pub struct State {
     // add debug order, trade, market info
 }
 
-const debug: bool = true;
+const DEBUG: bool = true;
 
 #[derive(Serialize)]
 pub struct StateDebug {
@@ -33,6 +33,12 @@ impl State {
         let player = HelloWorldPlayer::get_from_pid(&HelloWorldPlayer::pkey_to_pid(
             &pkey.try_into().unwrap(),
         ));
+        let mut player = player.unwrap();
+        if DEBUG {
+            for i in 0..2 {
+                player.data.load_position(i, &player.player_id);
+            }
+        }
         serde_json::to_string(&player).unwrap()
     }
 
@@ -63,7 +69,7 @@ impl State {
 
     pub fn snapshot() -> String {
         let state = unsafe { &STATE };
-        if !debug {
+        if !DEBUG {
             return serde_json::to_string(state).unwrap();
         }
         let mut state_debug = StateDebug {

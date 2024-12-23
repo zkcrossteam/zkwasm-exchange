@@ -79,6 +79,7 @@ impl StorageData for Position {
 #[derive(Debug, Serialize)]
 pub struct PlayerData {
     pub counter: u64,
+    /// 怎么避免复制，导致的问题
     pub positions: HashMap<u32, Position>,
 }
 
@@ -89,13 +90,16 @@ impl PlayerData {
         }
     }
 
-    pub fn load_position(&mut self, token_idx: u32, pid: &[u64; 2]) -> &Position {
-        if let Some(p) = self.positions.get(&token_idx) {
-            return p;
+    pub fn load_position(&mut self, token_idx: u32, pid: &[u64; 2]) -> &mut Position {
+        use std::collections::hash_map::Entry;
+
+        match self.positions.entry(token_idx) {
+            Entry::Occupied(entry) => entry.into_mut(),
+            Entry::Vacant(entry) => {
+                let p = Position::load(token_idx, pid);
+                entry.insert(p)
+            }
         }
-        let p = Position::load(token_idx, pid);
-        self.positions.insert(token_idx, p.clone());
-        self.positions.get(&token_idx).unwrap()
     }
 }
 

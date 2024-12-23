@@ -1,6 +1,6 @@
-use crate::config::ADMIN_PUBKEY;
+use crate::config::{ADMIN_PUBKEY, CONFIG};
 use crate::player::HelloWorldPlayer;
-use crate::settlement::{SettlementInfo, SETTLEMENT};
+use crate::settlement::{SettlementInfo};
 use crate::state::STATE;
 use crate::StorageData;
 use std::slice::IterMut;
@@ -14,7 +14,6 @@ pub struct Transaction {
     pub data: Data,
 }
 
-const AUTOTICK: u64 = 0;
 const ADD_TOKEN: u64 = 1;
 const ADD_MARKET: u64 = 2;
 const DEPOSIT_TOKEN: u64 = 3;
@@ -44,7 +43,7 @@ const ERROR_ORDER_NOT_LIVE: u32 = 4;
 const ERROR_ORDER_NOT_EXIT: u32 = 5;
 const ERROR_TRADE_A_BUY_B_SELL: u32 = 6;
 const ERROR_LIMIT_ORDER_PRICE_NOT_MATCH: u32 = 7;
-const ERROR_SAME_TRADE_ORDER_PID: u32 = 8;
+const ERROR_SAME_PID: u32 = 8;
 const ERROR_A_AND_B_ORDER_BOTH_MARKET: u32 = 9;
 const ERROR_ORDER_MARKET_NOT_MATCH: u32 = 2;
 const ERROR_BALANCE_NOT_MATCH: u32 = 3;
@@ -85,7 +84,7 @@ impl Transaction {
                     require(params.len() == 5);
                 };
                 let token_idx = params[1] as u32;
-                let mut address = u64_array_to_address(&[params[2], params[3], params[4]]);
+                let address = u64_array_to_address(&[params[2], params[3], params[4]]);
                 Data::AddToken(AddTokenParams { token_idx, address })
             }
             ADD_MARKET => {
@@ -167,11 +166,6 @@ impl Transaction {
         }
     }
 
-    pub fn inc_counter(&self, _pkey: &[u64; 4]) -> u32 {
-        //let player = HelloWorldPlayer::get(pkey);
-        todo!()
-    }
-
     pub fn is_admin(pkey: &[u64; 4]) -> bool {
         *pkey == *ADMIN_PUBKEY
     }
@@ -229,13 +223,15 @@ impl Transaction {
                 if player.is_none() {
                     return ERROR_PLAYER_NOT_EXIST;
                 }
+                let mut player = player.unwrap();
+
                 let token = Token::load(params.token_idx);
                 if token.is_none() {
                     zkwasm_rust_sdk::dbg!("deposit token not exist\n");
                     return ERROR_TOKEN_NOT_EXIST;
                 }
                 let pid = [params.pid_1, params.pid_2];
-                let mut position = player.unwrap().data.load_position(params.token_idx, &pid);
+                let position = player.data.load_position(params.token_idx, &pid);
                 //todo checkout overflow?
                 position.balance += params.amount;
                 position.store(params.token_idx, &pid);
@@ -293,17 +289,23 @@ impl Transaction {
                     zkwasm_rust_sdk::dbg!("transfer, player a or player b is none\n");
                     return ERROR_PLAYER_NOT_EXIST;
                 }
+                let mut player_1 = player_1.unwrap();
+                let mut player_2 = player_2.unwrap();
+
+                if player_1.player_id == player_2.player_id {
+                    zkwasm_rust_sdk::dbg!("transfer, player a and player b is same\n");
+                    return ERROR_SAME_PID;
+                }
+
                 let token = Token::load(params.token_idx);
                 if token.is_none() {
                     zkwasm_rust_sdk::dbg!("transfer, token not exist\n");
                     return ERROR_TOKEN_NOT_EXIST;
                 }
-                let mut position_1 = player_1
-                    .unwrap()
+                let position_1 = player_1
                     .data
                     .load_position(params.token_idx, &[pid_1, pid_2]);
-                let mut position_2 = player_2
-                    .unwrap()
+                let position_2 = player_2
                     .data
                     .load_position(params.token_idx, &[params.pid_1, params.pid_2]);
                 if position_1.balance < params.amount {
@@ -323,13 +325,14 @@ impl Transaction {
                     zkwasm_rust_sdk::dbg!("withdraw, player not exist\n");
                     return ERROR_PLAYER_NOT_EXIST;
                 }
+                let mut player = player.unwrap();
+
                 let token = Token::load(params.token_idx);
                 if token.is_none() {
                     zkwasm_rust_sdk::dbg!("withdraw, token not exist\n");
                     return ERROR_TOKEN_NOT_EXIST;
                 }
-                let mut position = player
-                    .unwrap()
+                let position = player
                     .data
                     .load_position(params.token_idx, &[pid_1, pid_2]);
                 if position.balance < params.amount {
@@ -388,7 +391,7 @@ impl Transaction {
                 }
                 if a_order.pid == b_order.pid {
                     zkwasm_rust_sdk::dbg!("add trade, a order and b order is from same user\n");
-                    return ERROR_SAME_TRADE_ORDER_PID;
+                    return ERROR_SAME_PID;
                 }
                 let player_a = HelloWorldPlayer::get_from_pid(&a_order.pid);
                 let player_b = HelloWorldPlayer::get_from_pid(&b_order.pid);
@@ -411,14 +414,7 @@ impl Transaction {
                         return ERROR_LIMIT_ORDER_PRICE_NOT_MATCH;
                     }
                 }
-                let mut player_a_token_a_position =
-                    player_a.data.load_position(market.token_a, &a_order.pid);
-                let mut player_a_token_b_position =
-                    player_a.data.load_position(market.token_b, &a_order.pid);
-                let mut player_b_token_a_position =
-                    player_b.data.load_position(market.token_a, &b_order.pid);
-                let mut player_b_token_b_position =
-                    player_b.data.load_position(market.token_b, &b_order.pid);
+
                 let a_cost = params.a_actual_amount;
                 let b_cost = params.b_actual_amount;
                 if !(a_order.lock_balance > params.a_actual_amount && b_order.lock_balance > params.b_actual_amount) {
@@ -450,17 +446,31 @@ impl Transaction {
                     return ERROR_A_AND_B_ORDER_BOTH_MARKET;
                 }
 
-                player_a_token_a_position.dec_lock_balance(a_cost);
+                {
+                    let player_a_token_a_position =
+                        player_a.data.load_position(market.token_a, &a_order.pid);
+                    player_a_token_a_position.dec_lock_balance(a_cost);
+                    player_a_token_a_position.store(market.token_a, &a_order.pid);
+                }
+                let player_a_token_b_position =
+                    player_a.data.load_position(market.token_b, &a_order.pid);
+                {
+                    let player_b_token_a_position =
+                        player_b.data.load_position(market.token_a, &b_order.pid);
+                    player_b_token_a_position.inc_balance(a_cost);
+                    player_b_token_a_position.store(market.token_a, &b_order.pid);
+                }
+                let player_b_token_b_position =
+                    player_b.data.load_position(market.token_b, &b_order.pid);
+
                 player_a_token_b_position.inc_balance(b_cost);
-                player_b_token_a_position.inc_balance(a_cost);
+
                 player_b_token_b_position.dec_lock_balance(b_cost);
                 a_order.update_status();
                 a_order.store();
                 b_order.update_status();
                 b_order.store();
-                player_a_token_a_position.store(market.token_a, &a_order.pid);
                 player_a_token_b_position.store(market.token_b, &a_order.pid);
-                player_b_token_a_position.store(market.token_a, &b_order.pid);
                 player_b_token_b_position.store(market.token_b, &b_order.pid);
                 let trace_id = unsafe { STATE.get_new_trade_id() };
                 let trade = Trade::new(
@@ -473,10 +483,6 @@ impl Transaction {
                 trade.store();
                 0
             }
-            _ => {
-                zkwasm_rust_sdk::dbg!("unknown command\n");
-                0xffffffff
-            }
         }
     }
 
@@ -486,6 +492,8 @@ impl Transaction {
             zkwasm_rust_sdk::dbg!("add limit order, player is none\n");
             return Err(ERROR_PLAYER_NOT_EXIST);
         }
+        let mut player = player.unwrap();
+
         let market = Market::load(params.market_id);
         if market.is_none() {
             zkwasm_rust_sdk::dbg!("add limit order, market is none\n");
@@ -507,15 +515,27 @@ impl Transaction {
             cost = params.amount;
         };
 
-        let mut position = player.unwrap().data.load_position(token_idx, pid);
-        // todo check overflow
-        if position.balance < cost {
-            zkwasm_rust_sdk::dbg!("add limit order, balance is not enough\n");
-            return Err(ERROR_BALANCE_NOT_ENOUGH);
+        {
+            let position = player.data.load_position(token_idx, pid);
+            // todo check overflow
+            if position.balance < cost {
+                zkwasm_rust_sdk::dbg!("add limit order, balance is not enough\n");
+                return Err(ERROR_BALANCE_NOT_ENOUGH);
+            }
+
+            position.dec_balance(cost);
+            position.inc_lock_balance(cost);
         }
 
-        position.dec_balance(cost);
-        position.inc_lock_balance(cost);
+
+        let fee_token_idx = CONFIG.fee_token_idx;
+        let fee = CONFIG.fee;
+        let fee_cost: u64 = fee;
+        {
+            let fee_position = player.data.load_position(fee_token_idx, pid);
+            fee_position.dec_balance(fee_cost);
+            fee_position.inc_lock_balance(fee_cost);
+        }
 
         let order_id = unsafe { STATE.get_new_order_id() };
         let order = Order::new(
@@ -526,11 +546,12 @@ impl Transaction {
             params.market_id,
             params.flag as u8,
             cost,
+            fee_cost,
             params.limit_price,
             params.amount,
             0,
         );
-        position.store(token_idx, pid);
+        player.data.store_positions(pid);
         order.store();
         Ok(0)
     }
@@ -541,6 +562,7 @@ impl Transaction {
             zkwasm_rust_sdk::dbg!("add market order, player is none\n");
             return Err(ERROR_PLAYER_NOT_EXIST);
         }
+        let mut player = player.unwrap();
         let market = Market::load(params.market_id);
         if market.is_none() {
             zkwasm_rust_sdk::dbg!("add market order, market is none\n");
@@ -562,17 +584,28 @@ impl Transaction {
             cost = params.amount;
         };
 
-        let mut position = player.unwrap().data.load_position(token_idx, pid);
-        // todo check overflow
-        if position.balance < cost {
-            let balance = position.balance;
+        {
+            let position = player.data.load_position(token_idx, pid);
+            // todo check overflow
+            if position.balance < cost {
+                let balance = position.balance;
 
-            zkwasm_rust_sdk::dbg!("add market order, token_idx {} balance {} is not enough, cost {}\n", token_idx, balance, cost);
-            return Err(ERROR_BALANCE_NOT_ENOUGH);
+                zkwasm_rust_sdk::dbg!("add market order, token_idx {} balance {} is not enough, cost {}\n", token_idx, balance, cost);
+                return Err(ERROR_BALANCE_NOT_ENOUGH);
+            }
+
+            position.dec_balance(cost);
+            position.inc_lock_balance(cost);
         }
 
-        position.dec_balance(cost);
-        position.inc_lock_balance(cost);
+        let fee_token_idx = CONFIG.fee_token_idx;
+        let fee = CONFIG.fee;
+        let fee_cost: u64 = fee;
+        {
+            let fee_position = player.data.load_position(fee_token_idx, pid);
+            fee_position.dec_balance(fee_cost);
+            fee_position.inc_lock_balance(fee_cost);
+        }
 
         let order_id = unsafe { STATE.get_new_order_id() };
         let order = Order::new(
@@ -583,11 +616,12 @@ impl Transaction {
             params.market_id,
             params.flag as u8,
             cost,
+            fee_cost,
             0,
             params.amount,
             0,
         );
-        position.store(token_idx, pid);
+        player.data.store_positions(pid);
         order.store();
         Ok(0)
     }
@@ -620,8 +654,14 @@ impl Transaction {
             token_idx = market.unwrap().token_b;
         };
 
-        let mut position = HelloWorldPlayer::get_from_pid(pid)
-            .unwrap()
+        let player = HelloWorldPlayer::get_from_pid(pid);
+        if player.is_none() {
+            zkwasm_rust_sdk::dbg!("cancel order, player is none\n");
+            return Err(ERROR_PLAYER_NOT_EXIST);
+        }
+        let mut player = player.unwrap();
+
+        let position = player
             .data
             .load_position(token_idx, pid);
         position.inc_balance(lock_balance);
@@ -728,7 +768,7 @@ impl Market {
     pub fn new(market_id: u64, token_a: u32, token_b: u32) -> Self {
         Self {
             market_id,
-            status: 1, // 默认为open状态
+            status: MARKET_STATUS_OPEN, // 默认为open状态
             token_a,
             token_b,
         }
@@ -923,6 +963,7 @@ impl Order {
         market_id: u64,
         flag: u8,
         lock_balance: u64,
+        lock_fee: u64,
         price: u64,
         amount: u64,
         already_deal_amount: u64,
@@ -1018,6 +1059,7 @@ impl StorageData for Order {
             market_id,
             flag,
             lock_balance,
+            lock_fee:0,
             price,
             amount,
             already_deal_amount,
