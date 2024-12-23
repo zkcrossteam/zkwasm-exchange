@@ -109,42 +109,82 @@ impl Transaction {
                 })
             }
 
-            REGISTER_PLAYER => Data::RegisterPlayer,
+            REGISTER_PLAYER =>{
+                unsafe {
+                    require(params.len() == 1);
+                };
+                Data::RegisterPlayer
+            },
 
-            ADD_LIMIT_ORDER => Data::AddLimitOrder(AddLimitOrderParams {
+            ADD_LIMIT_ORDER => {
+                unsafe {
+                    require(params.len() == 5);
+                };
+                Data::AddLimitOrder(AddLimitOrderParams {
                 market_id: params[1],
                 flag: params[2],
                 limit_price: params[3],
                 amount: params[4],
-            }),
-            ADD_MARKET_ORDER => Data::AddMarketOrder(AddMarketOrderParams {
+            })
+            },
+            ADD_MARKET_ORDER => {
+                unsafe {
+                    require(params.len() == 4);
+                };
+                Data::AddMarketOrder(AddMarketOrderParams {
+                    market_id: params[1],
+                    flag: params[2],
+                    amount: params[3],
+                })
+            },
+            CANCEL_ORDER => {
+                unsafe {
+                    require(params.len() == 2);
+                };
+                Data::CancelOrder(CancelOrderParams {
+                    order_id: params[1],
+                })
+            },
+            CLOSE_MARKET => {
+                unsafe {
+                    require(params.len() == 2);
+                };
+                Data::CloseMarket(CloseMarketParams {
                 market_id: params[1],
-                flag: params[2],
-                amount: params[3],
-            }),
-            CANCEL_ORDER => Data::CancelOrder(CancelOrderParams {
-                order_id: params[1],
-            }),
-            CLOSE_MARKET => Data::CloseMarket(CloseMarketParams {
-                market_id: params[1],
-            }),
-            TRANSFER => Data::Transfer(TransferParams {
-                pid_1: params[1],
-                pid_2: params[2],
-                token_idx: params[3] as u32,
-                amount: params[4],
-            }),
-            WITHDRAW => Data::Withdraw(WithdrawParams {
-                token_idx: params[1] as u32,
-                to_address: u64_array_to_address(&[params[2], params[3], params[4]]),
-                amount: params[5],
-            }),
-            ADD_TRADE => Data::AddTrade(AddTradeParams {
-                a_order_id: params[1],
-                b_order_id: params[2],
-                a_actual_amount: params[3],
-                b_actual_amount: params[4],
-            }),
+            })
+            },
+            TRANSFER => {
+                unsafe {
+                    require(params.len() == 5);
+                };
+                Data::Transfer(TransferParams {
+                    pid_1: params[1],
+                    pid_2: params[2],
+                    token_idx: params[3] as u32,
+                    amount: params[4],
+                })
+            },
+            WITHDRAW => {
+                unsafe {
+                    require(params.len() == 6);
+                };
+                Data::Withdraw(WithdrawParams {
+                    token_idx: params[1] as u32,
+                    to_address: u64_array_to_address(&[params[2], params[3], params[4]]),
+                    amount: params[5],
+                })
+            },
+            ADD_TRADE => {
+                unsafe {
+                    require(params.len() == 5);
+                };
+                Data::AddTrade(AddTradeParams {
+                    a_order_id: params[1],
+                    b_order_id: params[2],
+                    a_actual_amount: params[3],
+                    b_actual_amount: params[4],
+                })
+            },
             _ => {
                 zkwasm_rust_sdk::dbg!("unknown command\n");
                 Data::RegisterPlayer

@@ -91,7 +91,7 @@ export class Player {
   async register() {
     let nonce = await this.getNonce();
     try {
-      let txData = new TransactionData(nonce, CMD_INSTALL_PLAYER, [1n, 2n, 3n, 4n,5n]);
+      let txData = new TransactionData(nonce, CMD_INSTALL_PLAYER, []);
       let result = await this.rpc.sendTransaction(
           txData.encodeCommand(),
         // new BigUint64Array([createCommand(nonce, CMD_INSTALL_PLAYER, 0n), 0n, 0n, 0n, 1n, 2n,3n,4n]),
@@ -181,6 +181,23 @@ export class Player {
     try {
       let params = [marketId, flag, amount];
       let txData = new TransactionData(nonce, ADD_MARKET_ORDER, params);
+      let result = await this.rpc.sendTransaction(
+          txData.encodeCommand(),
+          this.processingKey
+      );
+      return result
+    } catch(e) {
+      if (e instanceof Error) {
+        console.log(e.message);
+      }
+    }
+  }
+
+  async cancelOrder(orderId: bigint) {
+    let nonce = await this.getNonce();
+    try {
+      let params = [orderId];
+      let txData = new TransactionData(nonce, CANCEL_ORDER, params);
       let result = await this.rpc.sendTransaction(
           txData.encodeCommand(),
           this.processingKey

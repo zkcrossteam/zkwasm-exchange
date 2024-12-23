@@ -64,6 +64,13 @@ async function main() {
   console.log("withdraw 1 tokens 0 from the playerB");
   state = await playerB.withdraw(0n, "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", 1n);
   console.log(JSON.stringify(state.player, null, 2));
+
+  console.log("add limit order");
+  state = await player.addLimitOrder(1n, 1n, 1n, 1n);
+
+  console.log("cancel order");
+  state = await player.cancelOrder(BigInt(state.state.order_id_counter));
+  console.log(JSON.stringify(state.state.orders[state.state.orders.length-1], null, 2));
 }
 
 main();
