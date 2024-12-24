@@ -65,6 +65,19 @@ pub fn u64_array_to_address(arr: &[u64; 3]) -> [u8; 20] {
     address
 }
 
+pub fn safe_mul(a: u64, b: u64) -> Option<u64> {
+    let a = a as u128;
+    let b = b as u128;
+    let precision = CONFIG.precision as u128;
+    let result = a.checked_mul(b).unwrap();
+    let result = result/precision;
+    if result > u64::MAX as u128 {
+        None
+    } else {
+        Some(result as u64)
+    }
+}
+
 impl Transaction {
     pub fn decode_error(e: u32) -> &'static str {
         match e {
@@ -505,7 +518,7 @@ impl Transaction {
             b_order.price
         };
 
-        let a_amount = match price.checked_mul(params.b_actual_amount) {
+        let a_amount = match safe_mul(price, params.b_actual_amount) {
             Some(v) => v,
             None => {
                 zkwasm_rust_sdk::dbg!("price * b_actual_amount overflow\n");
@@ -632,7 +645,7 @@ impl Transaction {
         let cost: u64;
         if params.flag == Order::FLAG_BUY as u64 {
             token_idx = market.unwrap().token_a;
-            cost = match params.amount.checked_mul(params.limit_price) {
+            cost = match safe_mul(params.amount, params.limit_price) {
                 Some(v) => v,
                 None => {
                     zkwasm_rust_sdk::dbg!("add limit order, amount * limit_price overflow\n");

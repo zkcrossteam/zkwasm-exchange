@@ -42,7 +42,7 @@ async function main() {
   console.log(JSON.stringify(state.player, null, 2));
 
   console.log("add limit order");
-  state = await player.addLimitOrder(1n, 1n, 100n, 100n);
+  state = await player.addLimitOrder(1n, 1n, BigInt(1e9), 100n);
   console.log(state);
 
   console.log("add market order");
@@ -53,9 +53,26 @@ async function main() {
 
   console.log("add trade");
   // @ts-ignore
-  state = await player.addTrace(BigInt(state.state.order_id_counter - 1), BigInt(state.state.order_id_counter), 10000n, 100n);
+  state = await player.addTrace(BigInt(state.state.order_id_counter - 1), BigInt(state.state.order_id_counter), 100n, 100n);
   console.log(state);
   // console.log(JSON.stringify(state, null, 2));
+
+  console.log("limit order and limit order test");
+
+  console.log("limit order and limit order test, add limit order");
+  state = await player.addLimitOrder(1n, 1n, BigInt(1e9), 100n);
+  console.log(state);
+
+  console.log("limit order and limit order test, add limit order");
+  state = await playerB.addLimitOrder(1n, 0n, BigInt(1e9), 100n);
+  console.log(state);
+
+  console.log(JSON.stringify(state, null, 2));
+
+  console.log("limit order and limit order test, add trade");
+  // @ts-ignore
+  state = await player.addTrace(BigInt(state.state.order_id_counter - 1), BigInt(state.state.order_id_counter), 100n, 100n);
+  console.log(state);
 
   state = await player.getState();
   console.log(JSON.stringify(state.player, null, 2));

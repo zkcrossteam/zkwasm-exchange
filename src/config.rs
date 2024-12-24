@@ -14,12 +14,14 @@ pub struct Config {
     pub version: &'static str,
     pub fee: u64,
     pub fee_token_idx: u32,
+    pub precision: u64,
 }
 lazy_static::lazy_static! {
     pub static ref CONFIG: Config = Config {
         version: "1.0",
         fee: 3,
         fee_token_idx: 0,
+        precision: 1e9 as u64,
     };
 }
 
