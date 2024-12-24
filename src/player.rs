@@ -42,22 +42,40 @@ impl Position {
         Self::from_data(&mut u64data)
     }
 
-    pub fn inc_balance(&mut self, amount: u64) {
-        self.balance += amount;
+    pub fn inc_balance(&mut self, amount: u64) -> bool {
+        match self.balance.checked_add(amount) {
+            Some(v) => {
+                self.balance = v;
+                true
+            }
+            None => false,
+        }
     }
 
-    pub fn dec_balance(&mut self, amount: u64) {
+    pub fn dec_balance(&mut self, amount: u64) -> bool {
+        if self.balance < amount {
+            return false;
+        }
         self.balance -= amount;
+        return true
     }
 
-    pub fn inc_lock_balance(&mut self, amount: u64) {
-        // todo add check overflow
-        self.lock_balance += amount;
+    pub fn inc_lock_balance(&mut self, amount: u64) -> bool {
+        match self.lock_balance.checked_add(amount) {
+            Some(v) => {
+                self.lock_balance = v;
+                true
+            }
+            None => false,
+        }
     }
 
-    pub fn dec_lock_balance(&mut self, amount: u64) {
-        // todo add check less than zero
+    pub fn dec_lock_balance(&mut self, amount: u64) -> bool{
+        if self.lock_balance < amount {
+            return false;
+        }
         self.lock_balance -= amount;
+        true
     }
 }
 

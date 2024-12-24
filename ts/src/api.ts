@@ -30,7 +30,7 @@ export class TransactionData {
   }
   encodeCommand() {
     const cmd = (this.nonce << 16n) + (BigInt(this.params.length + 1) << 8n) + this.command;
-    let buf = [this.command];
+    let buf = [cmd];
     buf = buf.concat(this.params);
     const barray = new BigUint64Array(buf);
     return barray;
@@ -79,6 +79,7 @@ export class Player {
   async getNonce(): Promise<bigint> {
     let state:any = await this.rpc.queryState(this.processingKey);
     let nonce = 0n;
+    // console.log("state", state);
     if (state.data) {
       let data = JSON.parse(state.data);
       if (data.player) {
@@ -107,6 +108,7 @@ export class Player {
 
   async addToken(idx: bigint, address: string) {
     let nonce = await this.getNonce();
+    // console.log("nonce", nonce);
     try {
       let addr = new LeHexBN(address);
       let params = [idx];
