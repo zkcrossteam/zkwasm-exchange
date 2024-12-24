@@ -10,6 +10,14 @@ function bigUint64ArrayToLittleEndianHex(array: BigUint64Array): string {
 }
 
 // Example usage
-const array = new BigUint64Array([3384289936557590707n, 14765969190488931697n, 3674533666729572964n, 50880686230481809n]);
+const array = new BigUint64Array(
+    [
+        7650428674698361946n,
+        14980623240377110513n,
+        16835242901320696514n,
+        340209823462135409n
+    ]
+
+);
 const littleEndianHex = bigUint64ArrayToLittleEndianHex(array);
 console.log(littleEndianHex);
