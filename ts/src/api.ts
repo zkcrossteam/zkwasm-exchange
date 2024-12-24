@@ -143,6 +143,23 @@ export class Player {
     }
   }
 
+  async closeMarket(marketId: bigint) {
+    let nonce = await this.getNonce();
+    try {
+      let params = [marketId];
+      let txData = new TransactionData(nonce, CLOSE_MARKET, params);
+      let result = await this.rpc.sendTransaction(
+          txData.encodeCommand(),
+          this.processingKey
+      );
+      return result
+    } catch(e) {
+      if (e instanceof Error) {
+        console.log(e.message);
+      }
+    }
+  }
+
   async deposit(pid: string, tokenAIdx: bigint, amount: bigint) {
     let nonce = await this.getNonce();
     try {

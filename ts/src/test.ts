@@ -77,6 +77,17 @@ async function main() {
   console.log("cancel order");
   state = await player.cancelOrder(BigInt(state.state.order_id_counter));
   console.log(JSON.stringify(state.state.orders[state.state.orders.length-1], null, 2));
+
+  console.log("add token 2");
+  state = await player.addToken(2n, "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC");
+  console.log(state);
+  console.log("add token market");
+  state = await player.addMarket(0n, 2n);
+  console.log(state);
+
+  console.log("close market");
+  state = await player.closeMarket(BigInt(state.state.market_id_counter));
+  console.log(state);
 }
 
 main();
