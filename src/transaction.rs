@@ -58,11 +58,10 @@ const TOKEN_STORE_PREFIX: u64 = 1;
 const MARKET_STORE_PREFIX: u64 = 1;
 
 pub fn u64_array_to_address(arr: &[u64; 3]) -> [u8; 20] {
-    let mut address = [0u8; 20];
-    for i in 0..20 {
-        address[i] = (arr[i / 8] >> (i % 8)) as u8;
-    }
-    address
+    let mut address = ((arr[0] >> 32) as u32).to_le_bytes().to_vec();
+    address.extend_from_slice(&arr[1].to_le_bytes());
+    address.extend_from_slice(&arr[2].to_le_bytes());
+    address.as_slice().try_into().unwrap()
 }
 
 pub fn safe_mul(a: u64, b: u64) -> Option<u64> {
@@ -232,6 +231,7 @@ impl Transaction {
                 let mut player = HelloWorldPlayer::new_from_pid(pid);
                 player.check_and_inc_nonce(self.nonce);
                 player.store();
+                unsafe {STATE.tick()};
                 0
             }
         }
@@ -247,8 +247,15 @@ impl Transaction {
         let nonce = self.nonce;
         zkwasm_rust_sdk::dbg!("process pkey: {} {}, nonce: {}\n", pid_1, pid_2, nonce);
         match self.data {
-            Data::RegisterPlayer => self.install_player(pkey),
+            Data::RegisterPlayer => {
+                self.install_player(pkey)
+            },
             Data::AddToken(ref params) => {
+                if params.token_idx > 255 {
+                    zkwasm_rust_sdk::dbg!("token idx overflow\n");
+                    return ERROR_OVERFLOW;
+                }
+
                 if !Self::is_admin(pkey) {
                     zkwasm_rust_sdk::dbg!("you are not admin\n");
                     return ERROR_PLAYER_IS_NOT_ADMIN;
@@ -444,7 +451,7 @@ impl Transaction {
                     return ERROR_BALANCE_NOT_ENOUGH;
                 }
                 let withdraw_info = WithdrawInfo {
-                    feature: params.token_idx,
+                    feature: params.token_idx<<8,
                     address: params.to_address,
                     amount: params.amount,
                 };

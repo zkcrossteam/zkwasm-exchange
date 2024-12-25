@@ -37,6 +37,28 @@ export class TransactionData {
   }
 }
 
+function address2BigUint64Array(address: string): BigUint64Array {
+  address = address.startsWith("0x") ? address.slice(2): address;
+  let addressBN = new BN(address, 16);
+  let a = addressBN.toArray("be", 20); // 20 bytes = 160 bits and split into 4, 8, 8
+
+  console.log("address is", address);
+  console.log("address be is", a);
+
+
+  /*
+(32 bit amount | 32 bit highbit of address)
+(64 bit mid bit of address (be))
+(64 bit tail bit of address (be))
+   */
+
+
+  let firstLimb = BigInt('0x' + bytesToHex(a.slice(0,4).reverse()));
+  let sndLimb = BigInt('0x' + bytesToHex(a.slice(4,12).reverse()));
+  let thirdLimb = BigInt('0x' + bytesToHex(a.slice(12, 20).reverse()));
+  return new BigUint64Array([firstLimb<<32n, sndLimb, thirdLimb]);
+}
+
 function createCommand(nonce: bigint, command: bigint, feature: bigint) {
   return (nonce << 16n) + (feature << 8n) + command;
 }
@@ -110,9 +132,9 @@ export class Player {
     let nonce = await this.getNonce();
     // console.log("nonce", nonce);
     try {
-      let addr = new LeHexBN(address);
+      let addr = address2BigUint64Array(address);
       let params = [idx];
-      params.push(...addr.toU64Array(3));
+      params.push(...addr);
       let txData = new TransactionData(nonce, CMD_ADD_TOKEN, params);
       let result = await this.rpc.sendTransaction(
           txData.encodeCommand(),
@@ -267,9 +289,9 @@ export class Player {
   async withdraw(idx: bigint, address: string, amount:bigint) {
     let nonce = await this.getNonce();
     try {
-      let addr = new LeHexBN(address);
+      let addr = address2BigUint64Array(address);
       let params = [idx];
-      params.push(...addr.toU64Array(3));
+      params.push(...addr);
       params.push(amount);
       let txData = new TransactionData(nonce, WITHDRAW, params);
       let result = await this.rpc.sendTransaction(
