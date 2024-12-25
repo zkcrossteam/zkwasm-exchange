@@ -28,6 +28,9 @@ async function main() {
   state = await player.withdraw(0n, "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", 1n);
   console.log(JSON.stringify(state.player, null, 2));
 
+  console.log("withdraw 2 tokens 0 from the player");
+  state = await player.withdraw(0n, "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", 2n);
+  console.log(JSON.stringify(state.player, null, 2));
 }
 
 main();

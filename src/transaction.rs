@@ -262,6 +262,7 @@ impl Transaction {
                 let token = Token::new(params.token_idx, params.address);
                 token.store();
                 player.store();
+                unsafe { STATE.tick() };
                 // TODO emit event
                 0
             }
@@ -285,6 +286,7 @@ impl Transaction {
                 market.store();
                 player.store();
                 // TODO emit event
+                unsafe { STATE.tick() };
                 0
             }
             Data::Deposit(ref params) => {
@@ -319,13 +321,17 @@ impl Transaction {
                 player.data.store_positions(&player.player_id);
                 player.store();
                 admin.store();
+                unsafe { STATE.tick() };
                 0
             }
             Data::AddLimitOrder(ref params) => {
                 zkwasm_rust_sdk::dbg!("add limit order\n");
 
                 match self.add_limit_order(&[pid_1, pid_2], params) {
-                    Ok(value) => value,
+                    Ok(value) => {
+                        unsafe { STATE.tick() };
+                        value
+                    },
                     Err(value) => return value,
                 }
             }
@@ -333,14 +339,22 @@ impl Transaction {
             Data::AddMarketOrder(ref params) => {
                 zkwasm_rust_sdk::dbg!("add market order\n");
                 match self.add_market_order(&[pid_1, pid_2], params) {
-                    Ok(value) => value,
+                    Ok(value) => {
+                        unsafe { STATE.tick() };
+                        value
+                    },
+
                     Err(value) => return value,
                 }
             }
             Data::CancelOrder(ref params) => {
                 zkwasm_rust_sdk::dbg!("cancel order\n");
                 match self.cancel_order(&[pid_1, pid_2], params) {
-                    Ok(value) => value,
+                    Ok(value) => {
+                        unsafe { STATE.tick() };
+                        value
+                    },
+
                     Err(value) => return value,
                 }
             }
@@ -360,6 +374,7 @@ impl Transaction {
                 market.status = MARKET_STATUS_CLOSE;
                 market.store();
                 player.store();
+                unsafe { STATE.tick() };
                 0
             }
 
@@ -408,6 +423,8 @@ impl Transaction {
 
                 player_2.data.store_positions(&player_2.player_id);
                 player_2.store();
+
+                unsafe { STATE.tick() };
                 0
             }
             Data::Withdraw(ref params) => {
@@ -435,10 +452,14 @@ impl Transaction {
                 position.dec_balance(params.amount);
                 position.store(params.token_idx, &[pid_1, pid_2]);
                 player.store();
+                unsafe { STATE.tick() };
                 0
             }
             Data::AddTrade(ref params) => match self.add_trade(pkey, params) {
-                Ok(value) => value,
+                Ok(value) => {
+                    unsafe { STATE.tick() };
+                    value
+                },
                 Err(value) => return value,
             }
         }

@@ -104,7 +104,8 @@ impl State {
 
     pub fn preempt() -> bool {
         let state = unsafe { &STATE };
-        return state.counter % 20 == 0;
+        zkwasm_rust_sdk::dbg!("preempt number is {}\n", {state.counter});
+        return (state.counter + 1) % 5 == 0;
     }
 
     pub fn flush_settlement() -> Vec<u8> {
