@@ -144,4 +144,4 @@ impl StorageData for PlayerData {
     }
 }
 
-pub type HelloWorldPlayer = Player<PlayerData>;
+pub type ExchangePlayer = Player<PlayerData>;

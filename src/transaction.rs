@@ -1,5 +1,5 @@
 use crate::config::{ADMIN_PUBKEY, CONFIG};
-use crate::player::{HelloWorldPlayer};
+use crate::player::{ExchangePlayer};
 use crate::settlement::{SettlementInfo};
 use crate::state::STATE;
 use crate::StorageData;
@@ -223,12 +223,12 @@ impl Transaction {
     }
     pub fn install_player(&self, pkey: &[u64; 4]) -> u32 {
         zkwasm_rust_sdk::dbg!("install \n");
-        let pid = HelloWorldPlayer::pkey_to_pid(pkey);
-        let player = HelloWorldPlayer::get_from_pid(&pid);
+        let pid = ExchangePlayer::pkey_to_pid(pkey);
+        let player = ExchangePlayer::get_from_pid(&pid);
         match player {
             Some(_) => ERROR_PLAYER_ALREADY_EXIST,
             None => {
-                let mut player = HelloWorldPlayer::new_from_pid(pid);
+                let mut player = ExchangePlayer::new_from_pid(pid);
                 player.check_and_inc_nonce(self.nonce);
                 player.store();
                 unsafe {STATE.tick()};
@@ -260,7 +260,7 @@ impl Transaction {
                     zkwasm_rust_sdk::dbg!("you are not admin\n");
                     return ERROR_PLAYER_IS_NOT_ADMIN;
                 }
-                let player = HelloWorldPlayer::get_and_check_nonce(&[pid_1, pid_2], self.nonce);
+                let player = ExchangePlayer::get_and_check_nonce(&[pid_1, pid_2], self.nonce);
 
                 zkwasm_rust_sdk::dbg!("add token\n");
                 if Token::load(params.token_idx).is_some() {
@@ -287,7 +287,7 @@ impl Transaction {
                     require(a_exist);
                     require(b_exist);
                 }
-                let player = HelloWorldPlayer::get_and_check_nonce(&[pid_1, pid_2], self.nonce);
+                let player = ExchangePlayer::get_and_check_nonce(&[pid_1, pid_2], self.nonce);
                 let new_market_id = unsafe { STATE.get_new_market_id() };
                 let market = Market::new(new_market_id, params.token_a, params.token_b);
                 market.store();
@@ -302,12 +302,12 @@ impl Transaction {
                     zkwasm_rust_sdk::dbg!("you are not admin\n");
                     return ERROR_PLAYER_IS_NOT_ADMIN;
                 }
-                let admin = HelloWorldPlayer::get_and_check_nonce(&HelloWorldPlayer::pkey_to_pid(pkey), self.nonce);
+                let admin = ExchangePlayer::get_and_check_nonce(&ExchangePlayer::pkey_to_pid(pkey), self.nonce);
                 let pid = [params.pid_1, params.pid_2];
                 zkwasm_rust_sdk::dbg!("Deposit: {} {}\n", pid_1, pid_2);
-                let mut player = HelloWorldPlayer::get_from_pid(&pid).unwrap_or_else(
+                let mut player = ExchangePlayer::get_from_pid(&pid).unwrap_or_else(
                     || {
-                        let player = HelloWorldPlayer::new_from_pid(pid);
+                        let player = ExchangePlayer::new_from_pid(pid);
                         player
                     },
 
@@ -371,7 +371,7 @@ impl Transaction {
                     zkwasm_rust_sdk::dbg!("you are not admin\n");
                     return ERROR_PLAYER_IS_NOT_ADMIN;
                 }
-                let player = HelloWorldPlayer::get_and_check_nonce(&[pid_1, pid_2], self.nonce);
+                let player = ExchangePlayer::get_and_check_nonce(&[pid_1, pid_2], self.nonce);
                 let market = Market::load(params.market_id);
                 if market.is_none() {
                     zkwasm_rust_sdk::dbg!("market not exist\n");
@@ -391,10 +391,10 @@ impl Transaction {
                     zkwasm_rust_sdk::dbg!("you are not admin\n");
                     return ERROR_PLAYER_IS_NOT_ADMIN;
                 }
-                let mut player_1 = HelloWorldPlayer::get_and_check_nonce(&[pid_1, pid_2], self.nonce);
-                let player_2_opt = HelloWorldPlayer::get_from_pid(&[params.pid_1, params.pid_2]);
+                let mut player_1 = ExchangePlayer::get_and_check_nonce(&[pid_1, pid_2], self.nonce);
+                let player_2_opt = ExchangePlayer::get_from_pid(&[params.pid_1, params.pid_2]);
                 let mut player_2 = player_2_opt.unwrap_or_else(|| {
-                    let player = HelloWorldPlayer::new_from_pid([params.pid_1, params.pid_2]);
+                    let player = ExchangePlayer::new_from_pid([params.pid_1, params.pid_2]);
                     player
                 });
 
@@ -436,7 +436,7 @@ impl Transaction {
             }
             Data::Withdraw(ref params) => {
                 zkwasm_rust_sdk::dbg!("withdraw\n");
-                let mut player = HelloWorldPlayer::get_and_check_nonce(&[pid_1, pid_2], self.nonce);
+                let mut player = ExchangePlayer::get_and_check_nonce(&[pid_1, pid_2], self.nonce);
 
                 let token = Token::load(params.token_idx);
                 if token.is_none() {
@@ -480,7 +480,7 @@ impl Transaction {
             return Err(ERROR_PLAYER_IS_NOT_ADMIN);
         }
 
-        let player = HelloWorldPlayer::get_and_check_nonce(&HelloWorldPlayer::pkey_to_pid(pkey), self.nonce);
+        let player = ExchangePlayer::get_and_check_nonce(&ExchangePlayer::pkey_to_pid(pkey), self.nonce);
 
         let a_order = Order::load(params.a_order_id);
         let b_order = Order::load(params.b_order_id);
@@ -518,8 +518,8 @@ impl Transaction {
             zkwasm_rust_sdk::dbg!("add trade, a order and b order is from same user\n");
             return Err(ERROR_SAME_PID);
         }
-        let player_a = HelloWorldPlayer::get_from_pid(&a_order.pid);
-        let player_b = HelloWorldPlayer::get_from_pid(&b_order.pid);
+        let player_a = ExchangePlayer::get_from_pid(&a_order.pid);
+        let player_b = ExchangePlayer::get_from_pid(&b_order.pid);
         if player_a.is_none() || player_b.is_none() {
             zkwasm_rust_sdk::dbg!("add trade, player a or player b is none\n");
             return Err(ERROR_PLAYER_NOT_EXIST);
@@ -671,7 +671,7 @@ impl Transaction {
     }
 
     pub fn add_limit_order(&self, pid: &[u64; 2], params: &AddLimitOrderParams) -> Result<u32, u32> {
-        let mut player = HelloWorldPlayer::get_and_check_nonce(pid, self.nonce);
+        let mut player = ExchangePlayer::get_and_check_nonce(pid, self.nonce);
 
         let market = Market::load(params.market_id);
         if market.is_none() {
@@ -755,7 +755,7 @@ impl Transaction {
     }
 
     pub fn add_market_order(&self, pid: &[u64; 2], params: &AddMarketOrderParams) -> Result<u32, u32> {
-        let mut player = HelloWorldPlayer::get_and_check_nonce(pid, self.nonce);
+        let mut player = ExchangePlayer::get_and_check_nonce(pid, self.nonce);
         let market = Market::load(params.market_id);
         if market.is_none() {
             zkwasm_rust_sdk::dbg!("add market order, market is none\n");
@@ -861,7 +861,7 @@ impl Transaction {
             token_idx = market.unwrap().token_b;
         };
 
-        let mut player = HelloWorldPlayer::get_and_check_nonce(pid, self.nonce);
+        let mut player = ExchangePlayer::get_and_check_nonce(pid, self.nonce);
         {
             let position = player
                 .data

@@ -1,4 +1,4 @@
-use crate::player::{HelloWorldPlayer};
+use crate::player::{ExchangePlayer};
 use crate::settlement::SettlementInfo;
 use serde::Serialize;
 use zkwasm_rest_abi::{MERKLE_MAP, StorageData};
@@ -32,7 +32,7 @@ const MAX_TOKEN_IDX: u32 = 2;
 
 impl State {
     pub fn get_state(pkey: Vec<u64>) -> String {
-        let player = HelloWorldPlayer::get_from_pid(&HelloWorldPlayer::pkey_to_pid(
+        let player = ExchangePlayer::get_from_pid(&ExchangePlayer::pkey_to_pid(
             &pkey.try_into().unwrap(),
         ));
         if player.is_none() {
