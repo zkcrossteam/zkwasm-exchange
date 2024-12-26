@@ -180,10 +180,10 @@ class MatchingSystem {
             }
         }
 
-        for(let i = 0; i < this.asks.length; i++) {
-            let askOrder = this.asks[i];
-            if(this.canMatch(order, askOrder)) {
-                let trade = this.processMatch(order, askOrder);
+        for(let i = 0; i < this.bids.length; i++) {
+            let bidOrder = this.bids[i];
+            if(this.canMatch(order, bidOrder)) {
+                let trade = this.processMatch(order, bidOrder);
                 if(trade) {
                     return [trade];
                 }
@@ -217,7 +217,9 @@ class MatchingSystem {
         while (i < this.bids.length && j < this.asks.length) {
             const bid = this.bids[i];
             const ask = this.asks[j];
-            if (this.canMatch(bid, ask)) {
+            let match = this.canMatch(bid, ask);
+            console.log("bid ", bid, "ask ", ask, match);
+            if (match) {
                 const trade = this.processMatch(bid, ask);
                 trades.push(trade);
                 if (trades.length > 0) {
@@ -240,24 +242,31 @@ class MatchingSystem {
 
     // Check if two orders can be matched
     private canMatch(order1: Order, order2: Order): boolean {
-
-        if (order1.shadow_already_deal_amount == order1.amount || order2.shadow_already_deal_amount == order2.shadow_already_deal_amount) {
+        // console.log("aaaa", order1.shadow_already_deal_amount == order1.amount);
+        // Check if either order is already fully matched
+        if (order1.shadow_already_deal_amount == order1.amount || order2.shadow_already_deal_amount == order2.amount) {
             return false;
         }
 
+        // console.log("bbbb");
         // Check if orders are for the same market
-        if (order1.market_id !== order2.market_id) return false;
+        if (order1.market_id != order2.market_id) return false;
 
         // Check if one is a buy and the other is a sell
-        if (order1.flag === order2.flag) return false;
+        if (order1.flag == order2.flag) return false;
+        if (order1.flag == Order.FLAG_SELL) {
+            let temp = order1;
+            order1 = order2;
+            order2 = temp;
+        }
 
         // Check if orders are from different players
-        if (order1.pid[0] === order2.pid[0] || order1.pid[0] === order2.pid[1]) return false;
-
+        if (order1.pid[0] == order2.pid[0] && order1.pid[1] === order2.pid[1]) return false;
         // Check if orders can be matched based on type and price
-        if (order1.type_ === Order.TYPE_LIMIT && order2.type_ === Order.TYPE_LIMIT) {
+        if (order1.type_ == Order.TYPE_LIMIT && order2.type_ == Order.TYPE_LIMIT) {
+            console.log("compare price ", order1.price, order2.price);
             return order1.price >= order2.price;
-        } else if (order1.type_ === Order.TYPE_MARKET || order2.type_ === Order.TYPE_MARKET) {
+        } else if (order1.type_ == Order.TYPE_MARKET || order2.type_ == Order.TYPE_MARKET) {
             return false; // Market orders can match with any opposite order
         }
 
