@@ -60,7 +60,7 @@ async function main() {
   console.log("limit order and limit order test");
 
   console.log("limit order and limit order test, add limit order");
-  state = await player.addLimitOrder(1n, 1n, BigInt(1e9), 100n);
+  state = await player.addLimitOrder(1n, 1n, BigInt(2*1e9), 100n);
   console.log(state);
 
   console.log("limit order and limit order test, add limit order");
@@ -105,6 +105,8 @@ async function main() {
   console.log("close market");
   state = await player.closeMarket(BigInt(state.state.market_id_counter));
   console.log(state);
+
+  console.log(JSON.stringify(state.state, null, 2));
 }
 
 main();

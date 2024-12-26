@@ -94,6 +94,7 @@ impl StorageData for Position {
     }
 }
 
+
 #[derive(Debug, Serialize)]
 pub struct PlayerData {
     pub counter: u64,

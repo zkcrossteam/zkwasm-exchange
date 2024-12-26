@@ -1,5 +1,5 @@
 use crate::config::{ADMIN_PUBKEY, CONFIG};
-use crate::player::HelloWorldPlayer;
+use crate::player::{HelloWorldPlayer};
 use crate::settlement::{SettlementInfo};
 use crate::state::STATE;
 use crate::StorageData;
@@ -535,13 +535,17 @@ impl Transaction {
 
         // 第一种情况 a order, b order 都是 limit order
         if a_order.is_limit_order() && b_order.is_limit_order() {
-            if a_order.price != b_order.price {
-                zkwasm_rust_sdk::dbg!("both a and b is limit order but price not equal\n");
+            if a_order.price <= b_order.price {
+                zkwasm_rust_sdk::dbg!("both a and b is limit order but not buy price >= sell price \n");
                 return Err(ERROR_LIMIT_ORDER_PRICE_NOT_MATCH);
             }
         }
         let price = if a_order.is_limit_order() {
-            a_order.price
+            if b_order.is_limit_order() {
+                b_order.price
+            } else {
+                a_order.price
+            }
         } else {
             b_order.price
         };
@@ -637,8 +641,19 @@ impl Transaction {
         }
 
         a_order.update_status();
-        a_order.store();
         b_order.update_status();
+
+        if a_order.status == Order::STATUS_MATCH {
+            // check profit
+            if a_order.lock_balance > 0 {
+                let player_a_token_a_position =
+                    player_a.data.load_position(market.token_a, &a_order.pid);
+                player_a_token_a_position.dec_lock_balance(a_order.lock_balance);
+                player_a_token_a_position.inc_balance(a_order.lock_balance);
+                a_order.lock_balance = 0;
+            }
+        }
+        a_order.store();
         b_order.store();
         player_a.data.store_positions(&player_a.player_id);
         player_b.data.store_positions(&player_b.player_id);

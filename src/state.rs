@@ -1,4 +1,4 @@
-use crate::player::HelloWorldPlayer;
+use crate::player::{HelloWorldPlayer};
 use crate::settlement::SettlementInfo;
 use serde::Serialize;
 use zkwasm_rest_abi::{MERKLE_MAP, StorageData};
@@ -28,6 +28,8 @@ pub struct StateDebug {
     pub trades: Vec<Trade>,
 }
 
+const MAX_TOKEN_IDX: u32 = 2;
+
 impl State {
     pub fn get_state(pkey: Vec<u64>) -> String {
         let player = HelloWorldPlayer::get_from_pid(&HelloWorldPlayer::pkey_to_pid(
@@ -38,7 +40,7 @@ impl State {
         }
         let mut player = player.unwrap();
         if DEBUG {
-            for i in 0..2 {
+            for i in 0..MAX_TOKEN_IDX {
                 player.data.load_position(i, &player.player_id);
             }
         }
