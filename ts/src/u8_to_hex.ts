@@ -14,3 +14,7 @@ function uint8ArrayToHex(array: Uint8Array): string {
 // Step 3: Print the hex string
 const hexString = uint8ArrayToHex(uint8Array);
 console.log(hexString);
+
+import { ethers } from "ethers";
+let h = await ethers.keccak256(ethers.toUtf8Bytes("hello world"));
+console.log(h);

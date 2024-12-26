@@ -200,6 +200,24 @@ export class Player {
     }
   }
 
+
+  async depositWithUint64Pid(pid_1: bigint, pid_2: bigint, tokenAIdx: bigint, amount: bigint) {
+    let nonce = await this.getNonce();
+    try {
+      let params = [pid_1, pid_2, tokenAIdx, amount];
+      let txData = new TransactionData(nonce, CMD_DEPOSIT, params);
+      let result = await this.rpc.sendTransaction(
+          txData.encodeCommand(),
+          this.processingKey
+      );
+      return result
+    } catch(e) {
+      if (e instanceof Error) {
+        console.log(e.message);
+      }
+    }
+  }
+
   async addLimitOrder(marketId: bigint, flag: bigint, limitPrice: bigint, amount: bigint) {
     let nonce = await this.getNonce();
     try {
