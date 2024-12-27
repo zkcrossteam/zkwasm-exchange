@@ -10,6 +10,23 @@ export class Token {
         this.tokenIdx = tokenIdx;
         this.address = address;
     }
+
+    static fromMongooseDoc(doc: mongoose.Document): Token {
+        const obj = doc.toObject({
+            transform: (doc, ret) => {
+                delete ret._id;
+                return ret;
+            }
+        });
+        return new Token(obj.tokenIdx, obj.address);
+    }
+
+    toMongooseDoc(): mongoose.Document {
+        return new TokenModel({
+            tokenIdx: this.tokenIdx,
+            address: this.address,
+        });
+    }
 }
 
 // Define the schema for the Token model
@@ -45,6 +62,25 @@ export class Market {
         this.status = status;
         this.tokenA = tokenA;
         this.tokenB = tokenB;
+    }
+
+    static fromMongooseDoc(doc: mongoose.Document): Market {
+        const obj = doc.toObject({
+            transform: (doc, ret) => {
+                delete ret._id;
+                return ret;
+            }
+        });
+        return new Market(obj.marketId, obj.status, obj.tokenA, obj.tokenB);
+    }
+
+    toMongooseDoc(): mongoose.Document {
+        return new MarketModel({
+            marketId: this.marketId,
+            status: this.status,
+            tokenA: this.tokenA,
+            tokenB: this.tokenB,
+        });
     }
 }
 

@@ -53,6 +53,44 @@ export class Order {
         this.shadow_already_deal_amount = already_deal_amount;
     }
 
+    static fromMongooseDoc(doc: mongoose.Document): Order {
+        const obj = doc.toObject({
+            transform: (doc, ret) => {
+                delete ret._id;
+                return ret;
+            }
+        });
+        return new Order(
+            obj.id,
+            obj.type_,
+            obj.status,
+            obj.pid,
+            obj.market_id,
+            obj.flag,
+            obj.lock_balance,
+            obj.lock_fee,
+            obj.price,
+            obj.amount,
+            obj.already_deal_amount
+        );
+    }
+
+    toMongooseDoc(): mongoose.Document {
+        return new OrderModel({
+            id: this.id,
+            type_: this.type_,
+            status: this.status,
+            pid: this.pid,
+            market_id: this.market_id,
+            flag: this.flag,
+            lock_balance: this.lock_balance,
+            lock_fee: this.lock_fee,
+            price: this.price,
+            amount: this.amount,
+            already_deal_amount: this.already_deal_amount
+        });
+    }
+
     public resetShadow(): void {
         this.shadow_already_deal_amount = this.already_deal_amount;
     }
@@ -92,6 +130,34 @@ export class Trade {
         this.b_order_id = b_order_id;
         this.a_actual_amount = a_actual_amount;
         this.b_actual_amount = b_actual_amount;
+    }
+
+    static fromMongooseDoc(doc: mongoose.Document): Trade {
+        const obj = doc.toObject({
+            transform: (doc, ret) => {
+                delete ret._id;
+                return ret;
+            }
+        });
+        return new Trade(
+            obj.trade_id,
+            obj.market_id,
+            obj.a_order_id,
+            obj.b_order_id,
+            obj.a_actual_amount,
+            obj.b_actual_amount
+        );
+    }
+
+    toMongooseDoc(): mongoose.Document {
+        return new TradeModel({
+            trade_id: this.trade_id,
+            market_id: this.market_id,
+            a_order_id: this.a_order_id,
+            b_order_id: this.b_order_id,
+            a_actual_amount: this.a_actual_amount,
+            b_actual_amount: this.b_actual_amount
+        });
     }
 }
 
