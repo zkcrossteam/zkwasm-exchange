@@ -991,6 +991,11 @@ pub struct Market {
     // todo add market price
 }
 
+// 可以为status定义常量
+pub const MARKET_STATUS_OPEN: u64 = 1;
+pub const MARKET_STATUS_CLOSE: u64 = 0;
+
+
 impl Market {
     pub fn new(market_id: u64, token_a: u32, token_b: u32) -> Self {
         Self {
@@ -1028,10 +1033,6 @@ impl Market {
         self.status == MARKET_STATUS_CLOSE
     }
 }
-
-// 可以为status定义常量
-pub const MARKET_STATUS_OPEN: u64 = 1;
-pub const MARKET_STATUS_CLOSE: u64 = 0;
 
 impl StorageData for Market {
     fn from_data(u64data: &mut IterMut<u64>) -> Self {

@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 // Order class (unchanged from the previous example)
 export class Order {
     static TYPE_LIMIT = 0;
@@ -77,14 +78,16 @@ export const PRICISION = BigInt(1e9);
 
 // Trade class
 export class Trade {
-    trade_id: number;
-    a_order_id: number;
-    b_order_id: number;
-    a_actual_amount: number;
-    b_actual_amount: number;
+    trade_id: bigint;
+    market_id: bigint;
+    a_order_id: bigint;
+    b_order_id: bigint;
+    a_actual_amount: bigint;
+    b_actual_amount: bigint;
 
-    constructor(a_order_id: number, b_order_id: number, a_actual_amount: number, b_actual_amount: number) {
-        this.trade_id = 0;
+    constructor(trade_id: bigint, market_id: bigint, a_order_id: bigint, b_order_id: bigint, a_actual_amount: bigint, b_actual_amount: bigint) {
+        this.trade_id = trade_id;
+        this.market_id = market_id;
         this.a_order_id = a_order_id;
         this.b_order_id = b_order_id;
         this.a_actual_amount = a_actual_amount;
@@ -300,10 +303,12 @@ export class MatchingSystem {
 
             // Create and return a Trade
             const trade = new Trade(
-                Number(buyOrder.id),
-                Number(sellOrder.id),
-                Number(aActualAmount),
-                Number(bActualAmount)
+                0n,
+                buyOrder.market_id,
+                buyOrder.id,
+                sellOrder.id,
+                aActualAmount,
+                bActualAmount
             );
             buyOrder.shadow_already_deal_amount += bActualAmount;
             sellOrder.shadow_already_deal_amount += bActualAmount;
@@ -321,10 +326,12 @@ export class MatchingSystem {
 
             // Create and return a Trade
             const trade = new Trade(
-                Number(buyOrder.id),
-                Number(sellOrder.id),
-                Number(aActualAmount),
-                Number(bActualAmount)
+                0n,
+                buyOrder.market_id,
+                buyOrder.id,
+                sellOrder.id,
+                aActualAmount,
+                bActualAmount
             );
             buyOrder.shadow_already_deal_amount += bActualAmount;
             sellOrder.shadow_already_deal_amount += bActualAmount;
@@ -341,10 +348,12 @@ export class MatchingSystem {
 
             // Create and return a Trade
             const trade = new Trade(
-                Number(buyOrder.id),
-                Number(sellOrder.id),
-                Number(aActualAmount),
-                Number(bActualAmount)
+                0n,
+                buyOrder.market_id,
+                buyOrder.id,
+                sellOrder.id,
+                aActualAmount,
+                bActualAmount
             );
             buyOrder.shadow_already_deal_amount += bActualAmount;
             sellOrder.shadow_already_deal_amount += bActualAmount;
@@ -357,4 +366,36 @@ export class MatchingSystem {
         }
     }
 }
+
+// Define the schema for the Order model
+const orderSchema = new mongoose.Schema({
+    id: { type: BigInt, required: true, unique: true },
+    type_: { type: Number, required: true, enum: [0, 1] }, // 0: TYPE_LIMIT, 1: TYPE_MARKET
+    status: { type: Number, required: true, enum: [0, 1, 2, 3, 4] }, // 0: STATUS_LIVE, 1: STATUS_MATCH, 2: STATUS_PARTIAL_MATCH, 3: STATUS_PARTIAL_CANCEL, 4: STATUS_CANCEL
+    pid: { type: [BigInt], required: true, validate: [(v:BigInt[]) => v.length === 2, 'pid must contain exactly two BigInt values'] },
+    market_id: { type: BigInt, required: true },
+    flag: { type: Number, required: true, enum: [0, 1] }, // 0: FLAG_SELL, 1: FLAG_BUY
+    lock_balance: { type: BigInt, required: true },
+    lock_fee: { type: BigInt, required: true },
+    price: { type: BigInt, required: true },
+    amount: { type: BigInt, required: true },
+    already_deal_amount: { type: BigInt, required: true },
+});
+
+// Create the Order model
+export const OrderModel = mongoose.model('Order', orderSchema);
+
+// Define the schema for the Trade model
+const tradeSchema = new mongoose.Schema({
+    trade_id: { type: BigInt, required: true, unique: true },
+    market_id: { type: BigInt, required: true },
+    a_order_id: { type: BigInt, required: true },
+    b_order_id: { type: BigInt, required: true },
+    a_actual_amount: { type: BigInt, required: true },
+    b_actual_amount: { type: BigInt, required: true },
+});
+
+// Create the Trade model
+export const TradeModel = mongoose.model('Trade', tradeSchema);
+
 
