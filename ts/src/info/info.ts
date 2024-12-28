@@ -27,6 +27,17 @@ export class Token {
             address: this.address,
         });
     }
+
+    toObject(): { tokenIdx: number, address: string } {
+        return {
+            tokenIdx: this.tokenIdx,
+            address: this.address,
+        };
+    }
+
+    static fromObject(obj: { tokenIdx: number, address: string }): Token {
+        return new Token(obj.tokenIdx, obj.address);
+    }
 }
 
 // Define the schema for the Token model
@@ -81,6 +92,19 @@ export class Market {
             tokenA: this.tokenA,
             tokenB: this.tokenB,
         });
+    }
+
+    toObject(): { marketId: number, status: number, tokenA: number, tokenB: number } {
+        return {
+            marketId: this.marketId,
+            status: this.status,
+            tokenA: this.tokenA,
+            tokenB: this.tokenB,
+        };
+    }
+
+    static fromObject(obj: { marketId: number, status: number, tokenA: number, tokenB: number }): Market {
+        return new Market(obj.marketId, obj.status, obj.tokenA, obj.tokenB);
     }
 }
 
@@ -137,6 +161,20 @@ export class Position {
             balance: this.balance,
             lock_balance: this.lock_balance
         });
+    }
+
+    toObject(): { pid_1: bigint, pid_2: bigint, token_idx: bigint, balance: bigint, lock_balance: bigint } {
+        return {
+            pid_1: this.pid_1,
+            pid_2: this.pid_2,
+            token_idx: this.token_idx,
+            balance: this.balance,
+            lock_balance: this.lock_balance
+        };
+    }
+
+    static fromObject(obj: { pid_1: bigint, pid_2: bigint, token_idx: bigint, balance: bigint, lock_balance: bigint }): Position {
+        return new Position(obj.pid_1, obj.pid_2, obj.token_idx, obj.balance, obj.lock_balance);
     }
 }
 

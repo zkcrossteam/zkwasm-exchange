@@ -91,6 +91,26 @@ export class Order {
         });
     }
 
+    toObject(): { id: bigint, type_: number, status: number, pid: [bigint, bigint], market_id: bigint, flag: number, lock_balance: bigint, lock_fee: bigint, price: bigint, amount: bigint, already_deal_amount: bigint } {
+        return {
+            id: this.id,
+            type_: this.type_,
+            status: this.status,
+            pid: this.pid,
+            market_id: this.market_id,
+            flag: this.flag,
+            lock_balance: this.lock_balance,
+            lock_fee: this.lock_fee,
+            price: this.price,
+            amount: this.amount,
+            already_deal_amount: this.already_deal_amount
+        };
+    }
+
+    static fromObject(obj: { id: bigint, type_: number, status: number, pid: [bigint, bigint], market_id: bigint, flag: number, lock_balance: bigint, lock_fee: bigint, price: bigint, amount: bigint, already_deal_amount: bigint }): Order {
+        return new Order(obj.id, obj.type_, obj.status, obj.pid, obj.market_id, obj.flag, obj.lock_balance, obj.lock_fee, obj.price, obj.amount, obj.already_deal_amount);
+    }
+
     public resetShadow(): void {
         this.shadow_already_deal_amount = this.already_deal_amount;
     }
@@ -158,6 +178,21 @@ export class Trade {
             a_actual_amount: this.a_actual_amount,
             b_actual_amount: this.b_actual_amount
         });
+    }
+
+    toObject(): { trade_id: bigint, market_id: bigint, a_order_id: bigint, b_order_id: bigint, a_actual_amount: bigint, b_actual_amount: bigint } {
+        return {
+            trade_id: this.trade_id,
+            market_id: this.market_id,
+            a_order_id: this.a_order_id,
+            b_order_id: this.b_order_id,
+            a_actual_amount: this.a_actual_amount,
+            b_actual_amount: this.b_actual_amount
+        };
+    }
+
+    static fromObject(obj: { trade_id: bigint, market_id: bigint, a_order_id: bigint, b_order_id: bigint, a_actual_amount: bigint, b_actual_amount: bigint }): Trade {
+        return new Trade(obj.trade_id, obj.market_id, obj.a_order_id, obj.b_order_id, obj.a_actual_amount, obj.b_actual_amount);
     }
 }
 
