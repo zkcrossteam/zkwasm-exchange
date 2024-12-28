@@ -103,3 +103,75 @@ const marketSchema = new mongoose.Schema({
 
 // Create the Market model
 export const MarketModel = mongoose.model('Market', marketSchema);
+
+
+export class Position {
+    pid_1: bigint;
+    pid_2: bigint;
+    token_idx: bigint;
+    balance: bigint;
+    lock_balance: bigint;
+    constructor(pid_1: bigint, pid_2: bigint, token_idx: bigint, balance: bigint, lock_balance: bigint) {
+        this.pid_1 = pid_1;
+        this.pid_2 = pid_2;
+        this.token_idx = token_idx;
+        this.balance = balance;
+        this.lock_balance = lock_balance;
+    }
+
+    static fromMongooseDoc(doc: mongoose.Document): Position {
+        const obj = doc.toObject({
+            transform: (doc, ret) => {
+                delete ret._id;
+                return ret;
+            }
+        });
+        return new Position(obj.pid_1, obj.pid_2, obj.token_idx, obj.balance, obj.lock_balance);
+    }
+
+    toMongooseDoc(): mongoose.Document {
+        return new PositionModel({
+            pid_1: this.pid_1,
+            pid_2: this.pid_2,
+            token_idx: this.token_idx,
+            balance: this.balance,
+            lock_balance: this.lock_balance
+        });
+    }
+}
+
+// 创建 Schema
+const PositionSchema = new mongoose.Schema({
+    pid_1: {
+        type: String,
+        required: true
+    },
+    pid_2: {
+        type: String,
+        required: true
+    },
+    token_idx: {
+        type: String,
+        required: true
+    },
+    balance: {
+        type: String,
+        required: true
+    },
+    lock_balance: {
+        type: String,
+        required: true
+    }
+}, {
+    timestamps: true
+});
+
+// 添加复合唯一索引
+PositionSchema.index(
+    { pid_1: 1, pid_2: 1, token_idx: 1 },
+    { unique: true }
+);
+
+// 创建并导出 Model
+export const PositionModel = mongoose.model('Position', PositionSchema);
+
