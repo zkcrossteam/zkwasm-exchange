@@ -20,6 +20,11 @@ async function main() {
   state = await player.addToken(0n, "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266");
   console.log(state);
 
+  console.log("update token 0");
+  state = await player.updateToken(0n, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
+  console.log(state);
+
+
   console.log("add token 1");
   state = await player.addToken(1n, "0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
   console.log(state);

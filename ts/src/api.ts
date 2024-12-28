@@ -17,6 +17,7 @@ const CLOSE_MARKET = 8n;
 const TRANSFER = 9n;
 const WITHDRAW = 10n;
 const ADD_TRADE = 11n;
+const UPDATE_TOKEN = 12n;
 const CMD_INC_COUNTER = 2n;
 
 export class TransactionData {
@@ -136,6 +137,26 @@ export class Player {
       let params = [idx];
       params.push(...addr);
       let txData = new TransactionData(nonce, CMD_ADD_TOKEN, params);
+      let result = await this.rpc.sendTransaction(
+          txData.encodeCommand(),
+          this.processingKey
+      );
+      return result
+    } catch(e) {
+      if (e instanceof Error) {
+        console.log("Error", e.message);
+      }
+    }
+  }
+
+  async updateToken(idx: bigint, address: string) {
+    let nonce = await this.getNonce();
+    // console.log("nonce", nonce);
+    try {
+      let addr = address2BigUint64Array(address);
+      let params = [idx];
+      params.push(...addr);
+      let txData = new TransactionData(nonce, UPDATE_TOKEN, params);
       let result = await this.rpc.sendTransaction(
           txData.encodeCommand(),
           this.processingKey

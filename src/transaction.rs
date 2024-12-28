@@ -27,6 +27,8 @@ const TRANSFER: u64 = 9;
 const WITHDRAW: u64 = 10;
 const ADD_TRADE: u64 = 11;
 
+const UPDATE_TOKEN: u64 = 12;
+
 // TODO fix error number
 const ERROR_PLAYER_ALREADY_EXIST: u32 = 1;
 const ERROR_TOKEN_ALREADY_EXIST: u32 = 2;
@@ -115,6 +117,14 @@ impl Transaction {
                 let token_idx = params[1] as u32;
                 let address = u64_array_to_address(&[params[2], params[3], params[4]]);
                 Data::AddToken(AddTokenParams { token_idx, address })
+            }
+            UPDATE_TOKEN => {
+                unsafe {
+                    require(params.len() == 5);
+                };
+                let token_idx = params[1] as u32;
+                let address = u64_array_to_address(&[params[2], params[3], params[4]]);
+                Data::UpdateToken(UpdateTokenParams { token_idx, address })
             }
             ADD_MARKET => {
                 unsafe {
@@ -267,6 +277,31 @@ impl Transaction {
                     return ERROR_TOKEN_ALREADY_EXIST;
                 }
                 let token = Token::new(params.token_idx, params.address);
+                token.store();
+                player.store();
+                unsafe { STATE.tick() };
+                // TODO emit event
+                0
+            }
+            Data::UpdateToken(ref params) => {
+                if params.token_idx > 255 {
+                    zkwasm_rust_sdk::dbg!("token idx overflow\n");
+                    return ERROR_OVERFLOW;
+                }
+
+                if !Self::is_admin(pkey) {
+                    zkwasm_rust_sdk::dbg!("you are not admin\n");
+                    return ERROR_PLAYER_IS_NOT_ADMIN;
+                }
+                let player = ExchangePlayer::get_and_check_nonce(&[pid_1, pid_2], self.nonce);
+
+                zkwasm_rust_sdk::dbg!("update token\n");
+                let token = Token::load(params.token_idx);
+                if token.is_none() {
+                    return ERROR_TOKEN_NOT_EXIST;
+                }
+                let mut token = token.unwrap();
+                token.address = params.address;
                 token.store();
                 player.store();
                 unsafe { STATE.tick() };
@@ -963,11 +998,14 @@ pub struct AddTokenParams {
     pub address: [u8; 20],
 }
 
+type UpdateTokenParams = AddTokenParams;
+
 #[derive(Debug, Clone)]
 pub enum Data {
     AddMarket(AddMarketParams),
     CloseMarket(CloseMarketParams),
     AddToken(AddTokenParams),
+    UpdateToken(UpdateTokenParams),
     RegisterPlayer,
     AddLimitOrder(AddLimitOrderParams),
     AddMarketOrder(AddMarketOrderParams),
