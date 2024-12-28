@@ -111,6 +111,38 @@ export class Order {
         return new Order(obj.id, obj.type_, obj.status, obj.pid, obj.market_id, obj.flag, obj.lock_balance, obj.lock_fee, obj.price, obj.amount, obj.already_deal_amount);
     }
 
+    toJSON() {
+        return {
+            id: this.id.toString(),
+            type_: this.type_.toString(),
+            status: this.status.toString(),
+            pid: this.pid.map((v) => v.toString()),
+            market_id: this.market_id.toString(),
+            flag: this.flag.toString(),
+            lock_balance: this.lock_balance.toString(),
+            lock_fee: this.lock_fee.toString(),
+            price: this.price.toString(),
+            amount: this.amount.toString(),
+            already_deal_amount: this.already_deal_amount.toString()
+        };
+    }
+
+    static fromJSON(obj: { id: string, type_: string, status: string, pid: string[], market_id: string, flag: string, lock_balance: string, lock_fee: string, price: string, amount: string, already_deal_amount: string }): Order {
+        return new Order(
+            BigInt(obj.id),
+            Number(obj.type_),
+            Number(obj.status),
+            obj.pid.map((v) => BigInt(v)) as [bigint, bigint],
+            BigInt(obj.market_id),
+            Number(obj.flag),
+            BigInt(obj.lock_balance),
+            BigInt(obj.lock_fee),
+            BigInt(obj.price),
+            BigInt(obj.amount),
+            BigInt(obj.already_deal_amount)
+        );
+    }
+
     public resetShadow(): void {
         this.shadow_already_deal_amount = this.already_deal_amount;
     }
@@ -193,6 +225,28 @@ export class Trade {
 
     static fromObject(obj: { trade_id: bigint, market_id: bigint, a_order_id: bigint, b_order_id: bigint, a_actual_amount: bigint, b_actual_amount: bigint }): Trade {
         return new Trade(obj.trade_id, obj.market_id, obj.a_order_id, obj.b_order_id, obj.a_actual_amount, obj.b_actual_amount);
+    }
+
+    toJSON() {
+        return {
+            trade_id: this.trade_id.toString(),
+            market_id: this.market_id.toString(),
+            a_order_id: this.a_order_id.toString(),
+            b_order_id: this.b_order_id.toString(),
+            a_actual_amount: this.a_actual_amount.toString(),
+            b_actual_amount: this.b_actual_amount.toString()
+        };
+    }
+
+    static fromJSON(obj: { trade_id: string, market_id: string, a_order_id: string, b_order_id: string, a_actual_amount: string, b_actual_amount: string }): Trade {
+        return new Trade(
+            BigInt(obj.trade_id),
+            BigInt(obj.market_id),
+            BigInt(obj.a_order_id),
+            BigInt(obj.b_order_id),
+            BigInt(obj.a_actual_amount),
+            BigInt(obj.b_actual_amount)
+        );
     }
 }
 

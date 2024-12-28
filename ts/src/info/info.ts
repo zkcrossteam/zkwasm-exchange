@@ -38,6 +38,14 @@ export class Token {
     static fromObject(obj: { tokenIdx: number, address: string }): Token {
         return new Token(obj.tokenIdx, obj.address);
     }
+
+    toJSON() {
+        return this.toObject();
+    }
+
+    static fromJSON(obj: { tokenIdx: number, address: string }) {
+        return Token.fromObject(obj);
+    }
 }
 
 // Define the schema for the Token model
@@ -105,6 +113,14 @@ export class Market {
 
     static fromObject(obj: { marketId: number, status: number, tokenA: number, tokenB: number }): Market {
         return new Market(obj.marketId, obj.status, obj.tokenA, obj.tokenB);
+    }
+
+    toJSON() {
+        return this.toObject();
+    }
+
+    static fromJSON(obj: { marketId: number, status: number, tokenA: number, tokenB: number }) {
+        return Market.fromObject(obj);
     }
 }
 
@@ -175,6 +191,26 @@ export class Position {
 
     static fromObject(obj: { pid_1: bigint, pid_2: bigint, token_idx: bigint, balance: bigint, lock_balance: bigint }): Position {
         return new Position(obj.pid_1, obj.pid_2, obj.token_idx, obj.balance, obj.lock_balance);
+    }
+
+    toJSON() {
+        return {
+            pid_1: this.pid_1.toString(),
+            pid_2: this.pid_2.toString(),
+            token_idx: this.token_idx.toString(),
+            balance: this.balance.toString(),
+            lock_balance: this.lock_balance.toString()
+        };
+    }
+
+    static fromJSON(obj: { pid_1: string, pid_2: string, token_idx: string, balance: string, lock_balance: string }): Position {
+        return new Position(
+            BigInt(obj.pid_1),
+            BigInt(obj.pid_2),
+            BigInt(obj.token_idx),
+            BigInt(obj.balance),
+            BigInt(obj.lock_balance)
+        );
     }
 }
 
