@@ -8,6 +8,7 @@ use std::u64;
 use serde::Serialize;
 use zkwasm_rest_abi::{WithdrawInfo, MERKLE_MAP};
 use zkwasm_rust_sdk::require;
+use crate::event::{EVENT_MARKET, EVENT_ORDER, EVENT_TOKEN, EVENT_TRADE, finalize_events, get_event, init_events};
 
 pub struct Transaction {
     pub nonce: u64,
@@ -251,7 +252,18 @@ impl Transaction {
         *pkey == *ADMIN_PUBKEY
     }
 
-    pub fn process(&self, pkey: &[u64; 4], _rand: &[u64; 4]) -> u32 {
+    pub fn process(&self, pkey: &[u64; 4], rand: &[u64; 4]) -> Vec<u64> {
+        unsafe {
+          init_events();
+        };
+        let ret = self.process_inner(pkey, rand);
+        unsafe {
+            finalize_events(ret);
+        };
+        unsafe {return get_event().clone();}
+    }
+
+    pub fn process_inner(&self, pkey: &[u64; 4], _rand: &[u64; 4]) -> u32 {
         let pid_1 = pkey[1];
         let pid_2 = pkey[2];
         let nonce = self.nonce;
@@ -278,6 +290,7 @@ impl Transaction {
                 }
                 let token = Token::new(params.token_idx, params.address);
                 token.store();
+                token.add_event();
                 player.store();
                 unsafe { STATE.tick() };
                 // TODO emit event
@@ -303,9 +316,9 @@ impl Transaction {
                 let mut token = token.unwrap();
                 token.address = params.address;
                 token.store();
+                token.add_event();
                 player.store();
                 unsafe { STATE.tick() };
-                // TODO emit event
                 0
             }
             Data::AddMarket(ref params) => {
@@ -326,6 +339,7 @@ impl Transaction {
                 let new_market_id = unsafe { STATE.get_new_market_id() };
                 let market = Market::new(new_market_id, params.token_a, params.token_b);
                 market.store();
+                market.add_event();
                 player.store();
                 // TODO emit event
                 unsafe { STATE.tick() };
@@ -415,6 +429,7 @@ impl Transaction {
                 let mut market = market.unwrap();
                 market.status = MARKET_STATUS_CLOSE;
                 market.store();
+                market.add_event();
                 player.store();
                 unsafe { STATE.tick() };
                 0
@@ -688,10 +703,10 @@ impl Transaction {
                 a_order.lock_balance = 0;
             }
         }
-        a_order.store();
-        b_order.store();
         player_a.data.store_positions(&player_a.player_id);
+        player_a.data.add_positions_event(&player_a.player_id);
         player_b.data.store_positions(&player_b.player_id);
+        player_b.data.add_positions_event(&player_b.player_id);
         let trace_id = unsafe { STATE.get_new_trade_id() };
         let trade = Trade::new(
             trace_id,
@@ -701,6 +716,11 @@ impl Transaction {
             params.b_actual_amount,
         );
         trade.store();
+        trade.add_event(a_order.market_id);
+        a_order.store();
+        a_order.add_event();
+        b_order.store();
+        b_order.add_event();
         player.store();
         Ok(0)
     }
@@ -783,8 +803,10 @@ impl Transaction {
             params.amount,
             0,
         );
-        order.store();
         player.data.store_positions(pid);
+        player.data.add_positions_event(pid);
+        order.store();
+        order.add_event();
         player.store();
         Ok(0)
     }
@@ -863,8 +885,10 @@ impl Transaction {
             0,
         );
         player.data.store_positions(pid);
+        player.data.add_positions_event(pid);
         player.store();
         order.store();
+        order.add_event();
         Ok(0)
     }
 
@@ -923,14 +947,15 @@ impl Transaction {
                 zkwasm_rust_sdk::dbg!("cancel order, fee lock balance is overflow\n");
                 return Err(ERROR_OVERFLOW);
             };
-
         }
 
         let mut order = order;
         order.status = Order::STATUS_CANCEL;
         order.lock_balance = 0;
         order.store();
+        order.add_event();
         player.data.store_positions(&player.player_id);
+        player.data.add_positions_event(&player.player_id);
         player.store();
         Ok(0)
     }
@@ -1048,6 +1073,17 @@ impl Market {
         [COMMON_PREFIX, MARKET_STORE_PREFIX, 0, market_id]
     }
 
+    pub fn add_event(&self) {
+        let events = unsafe { get_event() };
+        events.push(EVENT_MARKET << 32);
+        let pos = events.len();
+        events.push(self.market_id);
+        events.push(self.status);
+        events.push(self.token_a as u64);
+        events.push(self.token_b as u64);
+        events[pos - 1] |= (events.len() - pos) as u64;
+    }
+
     pub fn store(&self) {
         zkwasm_rust_sdk::dbg!("store market\n");
         let mut data = Vec::new();
@@ -1108,6 +1144,17 @@ impl Token {
 
     pub fn get_key(token_idx: u32) -> [u64; 4] {
         [COMMON_PREFIX, TOKEN_STORE_PREFIX, 0, token_idx as u64]
+    }
+
+    pub fn add_event(&self) {
+       let events = unsafe { get_event() };
+        events.push(EVENT_TOKEN << 32);
+        let pos = events.len();
+        events.push(self.token_idx as u64);
+        for i in 0..20 {
+            events.push(self.address[i] as u64);
+        }
+        events[pos - 1] |= (events.len() - pos) as u64;
     }
 
     pub fn store(&self) {
@@ -1284,6 +1331,25 @@ impl Order {
         }
     }
 
+    pub fn add_event(&self) {
+        let events = unsafe { get_event() };
+        events.push(EVENT_ORDER << 32);
+        let pos = events.len();
+        events.push(self.id);
+        events.push(self.type_ as u64);
+        events.push(self.status as u64);
+        events.push(self.pid[0]);
+        events.push(self.pid[1]);
+        events.push(self.market_id);
+        events.push(self.flag as u64);
+        events.push(self.lock_balance);
+        events.push(self.lock_fee);
+        events.push(self.price);
+        events.push(self.amount);
+        events.push(self.already_deal_amount);
+        events[pos - 1] |= (events.len() - pos) as u64;
+    }
+
     pub fn store(&self) {
         zkwasm_rust_sdk::dbg!("store order\n");
         let mut data = Vec::new();
@@ -1386,6 +1452,19 @@ impl Trade {
 
     pub fn get_key(trade_id: u64) -> [u64; 4] {
         [TRADE_PREFIX, 0, 0, trade_id]
+    }
+
+    pub fn add_event(&self, market_id: u64) {
+        let events = unsafe { get_event() };
+        events.push(EVENT_TRADE << 32);
+        let pos = events.len();
+        events.push(self.trade_id);
+        events.push(market_id);
+        events.push(self.a_order_id);
+        events.push(self.b_order_id);
+        events.push(self.a_actual_amount);
+        events.push(self.b_actual_amount);
+        events[pos - 1] |= (events.len() - pos) as u64;
     }
 
     pub fn store(&self) {

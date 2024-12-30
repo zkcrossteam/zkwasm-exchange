@@ -11,6 +11,7 @@ pub struct State {
     pub market_id_counter: u64,
     pub order_id_counter: u64,
     pub trade_id_counter: u64,
+    pub event_id_counter: u64,
     // add debug order, trade, market info
 }
 
@@ -23,6 +24,7 @@ pub struct StateDebug {
     pub market_id_counter: u64,
     pub order_id_counter: u64,
     pub trade_id_counter: u64,
+    pub event_id_counter: u64,
     // add debug order, trade, market info
     pub orders: Vec<Order>,
     pub trades: Vec<Trade>,
@@ -69,6 +71,7 @@ impl State {
             market_id_counter: 0,
             order_id_counter: 0,
             trade_id_counter: 0,
+            event_id_counter: 0,
         }
     }
 
@@ -83,6 +86,7 @@ impl State {
             market_id_counter: state.market_id_counter,
             order_id_counter: state.order_id_counter,
             trade_id_counter: state.trade_id_counter,
+            event_id_counter: state.event_id_counter,
             orders: vec![],
             trades: vec![],
         };
@@ -137,6 +141,11 @@ impl State {
         self.trade_id_counter
     }
 
+    pub fn get_new_event_id(&mut self) -> u64 {
+        self.event_id_counter += 1;
+        self.event_id_counter
+    }
+
     pub fn get_key() -> [u64; 4] {
         [0, 0, 0, 0]
     }
@@ -161,6 +170,7 @@ impl StorageData for State {
             market_id_counter: *u64data.next().unwrap(),
             order_id_counter: *u64data.next().unwrap(),
             trade_id_counter: *u64data.next().unwrap(),
+            event_id_counter: *u64data.next().unwrap(),
         }
     }
 
@@ -170,6 +180,7 @@ impl StorageData for State {
         data.push(self.market_id_counter);
         data.push(self.order_id_counter);
         data.push(self.trade_id_counter);
+        data.push(self.event_id_counter);
     }
 }
 
@@ -179,4 +190,5 @@ pub static mut STATE: State = State {
     market_id_counter: 0,
     order_id_counter: 0,
     trade_id_counter: 0,
+    event_id_counter: 0,
 };

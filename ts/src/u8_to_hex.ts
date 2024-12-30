@@ -18,3 +18,12 @@ console.log(hexString);
 import { ethers } from "ethers";
 let h = await ethers.keccak256(ethers.toUtf8Bytes("hello world"));
 console.log(h);
+
+function bigUint64ArrayToHexStringArray(arr: BigUint64Array): string {
+    return Array.from(arr, num => num.toString(16).padStart(2, '0')).join('');
+}
+
+// Example usage
+const bigUint64Array = new BigUint64Array([1n, 2n, 3n]);
+const hex = bigUint64ArrayToHexStringArray(bigUint64Array);
+console.log(hex); // Output: ["0000000000000001", "0000000000000002", "0000000000000003"]

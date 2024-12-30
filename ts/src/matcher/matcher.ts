@@ -143,6 +143,22 @@ export class Order {
         );
     }
 
+    static fromEvent(data: BigUint64Array): Order {
+        return new Order(
+            data[0],
+            Number(data[1]),
+            Number(data[2]),
+            [data[3], data[4]],
+            data[5],
+            Number(data[6]),
+            data[7],
+            data[8],
+            data[9],
+            data[10],
+            data[11]
+        );
+    }
+
     public resetShadow(): void {
         this.shadow_already_deal_amount = this.already_deal_amount;
     }
@@ -248,6 +264,17 @@ export class Trade {
             BigInt(obj.b_actual_amount)
         );
     }
+
+    static fromEvent(data: BigUint64Array): Trade {
+        return new Trade(
+            data[0],
+            data[1],
+            data[2],
+            data[3],
+            data[4],
+            data[5]
+        );
+    }
 }
 
 
@@ -259,8 +286,8 @@ export class MatchingSystem {
     private market_bids: Order[];
     private market_asks: Order[];
 
-    constructor() {
-        this.marketId = 1n;
+    constructor(marketId: bigint) {
+        this.marketId = marketId;
         this.bids = [];
         this.asks = [];
         this.market_bids = [];

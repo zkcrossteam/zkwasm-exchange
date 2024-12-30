@@ -2,6 +2,7 @@ use serde::Serialize;
 use std::collections::HashMap;
 use std::slice::IterMut;
 use zkwasm_rest_abi::{Player, StorageData, MERKLE_MAP};
+use crate::event::{EVENT_POSITION, get_event};
 
 const POSITION_PREFIX: u64 = 0xfffffffffffffffe;
 
@@ -103,6 +104,23 @@ pub struct PlayerData {
 }
 
 impl PlayerData {
+
+    pub fn add_positions_event(&self, pid: &[u64; 2]) {
+        zkwasm_rust_sdk::dbg!("add position event\n");
+        for (token_idx, position) in self.positions.iter() {
+            let events = unsafe { get_event() };
+            events.push(EVENT_POSITION << 32);
+            let pos = events.len();
+            events.push(pid[0]);
+            events.push(pid[1]);
+            events.push(*token_idx as u64);
+            events.push(position.balance);
+            events.push(position.lock_balance);
+            events[pos - 1] |= (events.len() - pos)  as u64;
+        }
+        zkwasm_rust_sdk::dbg!("end of add position event\n");
+    }
+
     pub fn store_positions(&self, pid: &[u64; 2]) {
         for (token_idx, position) in self.positions.iter() {
             position.store(*token_idx, pid);

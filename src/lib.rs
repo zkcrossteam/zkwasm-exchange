@@ -7,6 +7,7 @@ mod player;
 pub mod settlement;
 pub mod state;
 mod transaction;
+mod event;
 
 use crate::config::Config;
 use crate::state::State;

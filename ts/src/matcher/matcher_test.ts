@@ -3,7 +3,7 @@ import { MatchingSystem, Order,PRICISION } from './matcher.js';
 {
     console.log("Matcher test(limit order and limit order)");
 // Example usage
-    const matchingSystem = new MatchingSystem();
+    const matchingSystem = new MatchingSystem(1n);
 
 // Add some sample orders
     const order1 = new Order(
@@ -43,7 +43,7 @@ import { MatchingSystem, Order,PRICISION } from './matcher.js';
 {
     console.log("Matcher test(buy market order and limit order)");
 // Example usage
-    const matchingSystem = new MatchingSystem();
+    const matchingSystem = new MatchingSystem(1n);
 
 // Add some sample orders
     const order1 = new Order(
@@ -83,7 +83,7 @@ import { MatchingSystem, Order,PRICISION } from './matcher.js';
 {
     console.log("Matcher test(buy limit order and sell market order)");
 // Example usage
-    const matchingSystem = new MatchingSystem();
+    const matchingSystem = new MatchingSystem(1n);
 
 // Add some sample orders
     const order1 = new Order(

@@ -46,6 +46,10 @@ export class Token {
     static fromJSON(obj: { tokenIdx: number, address: string }) {
         return Token.fromObject(obj);
     }
+
+    static fromEvent(data: BigUint64Array): Token {
+        return new Token(Number(data[0]),  Array.from(data.slice(1, 21), num => num.toString(16).padStart(2, '0')).join(''));
+    }
 }
 
 // Define the schema for the Token model
@@ -121,6 +125,10 @@ export class Market {
 
     static fromJSON(obj: { marketId: number, status: number, tokenA: number, tokenB: number }) {
         return Market.fromObject(obj);
+    }
+
+    static fromEvent(data: BigUint64Array): Market {
+        return new Market(Number(data[0]), Number(data[1]), Number(data[2]), Number(data[3]));
     }
 }
 
@@ -212,32 +220,34 @@ export class Position {
             BigInt(obj.lock_balance)
         );
     }
+    static fromEvent(data: BigUint64Array): Position {
+        return new Position(data[0], data[1], data[2], data[3], data[4]);
+    }
+
 }
 
 // 创建 Schema
 const PositionSchema = new mongoose.Schema({
     pid_1: {
-        type: String,
+        type: BigInt,
         required: true
     },
     pid_2: {
-        type: String,
+        type: BigInt,
         required: true
     },
     token_idx: {
-        type: String,
+        type: BigInt,
         required: true
     },
     balance: {
-        type: String,
+        type: BigInt,
         required: true
     },
     lock_balance: {
-        type: String,
+        type: BigInt,
         required: true
     }
-}, {
-    timestamps: true
 });
 
 // 添加复合唯一索引
