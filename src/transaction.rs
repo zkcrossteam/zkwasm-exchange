@@ -51,6 +51,7 @@ const ERROR_A_AND_B_ORDER_BOTH_MARKET: u32 = 13;
 const ERROR_ORDER_MARKET_NOT_MATCH: u32 = 14;
 const ERROR_BALANCE_NOT_MATCH: u32 = 15;
 const ERROR_OVERFLOW: u32 = 16;
+const ERROR_AMOUNT : u32 = 17;
 
 const ERROR_PLAYER_IS_NOT_ADMIN: u32 = 0xffffffff;
 
@@ -99,6 +100,7 @@ impl Transaction {
             ERROR_ORDER_MARKET_NOT_MATCH => "OrderMarketNotMatch",
             ERROR_BALANCE_NOT_MATCH => "BalanceNotMatch",
             ERROR_OVERFLOW => "Overflow",
+            ERROR_AMOUNT => "Amount",
             // todo add other error
             _ => "Unknown",
         }
@@ -129,11 +131,12 @@ impl Transaction {
             }
             ADD_MARKET => {
                 unsafe {
-                    require(params.len() == 3);
+                    require(params.len() == 4);
                 };
                 let token_a = params[1] as u32;
                 let token_b = params[2] as u32;
-                Data::AddMarket(AddMarketParams { token_a, token_b })
+                let last_deal_price = params[3];
+                Data::AddMarket(AddMarketParams { token_a, token_b, last_deal_price })
             }
 
             DEPOSIT_TOKEN => {
@@ -169,12 +172,13 @@ impl Transaction {
             },
             ADD_MARKET_ORDER => {
                 unsafe {
-                    require(params.len() == 4);
+                    require(params.len() == 5);
                 };
                 Data::AddMarketOrder(AddMarketOrderParams {
                     market_id: params[1],
                     flag: params[2],
-                    amount: params[3],
+                    b_token_amount: params[3],
+                    a_token_amount: params[4],
                 })
             },
             CANCEL_ORDER => {
@@ -337,7 +341,7 @@ impl Transaction {
                 }
                 let player = ExchangePlayer::get_and_check_nonce(&[pid_1, pid_2], self.nonce);
                 let new_market_id = unsafe { STATE.get_new_market_id() };
-                let market = Market::new(new_market_id, params.token_a, params.token_b);
+                let market = Market::new(new_market_id, params.token_a, params.token_b, params.last_deal_price);
                 market.store();
                 market.add_event();
                 player.store();
@@ -633,13 +637,21 @@ impl Transaction {
             a_order.lock_balance -= params.a_actual_amount;
             b_order.lock_balance -= params.b_actual_amount;
             a_order.already_deal_amount += params.b_actual_amount;
-            b_order.already_deal_amount += params.b_actual_amount;
+            if b_order.a_token_amount != 0 {
+                b_order.already_deal_amount += params.a_actual_amount;
+            } else {
+                b_order.already_deal_amount += params.b_actual_amount;
+            }
         } else if a_order.is_market_order() && b_order.is_limit_order() {
             // 第三种情况 a order 是 market order, b order 是 limit order
             // todo check price
             a_order.lock_balance -= params.a_actual_amount;
             b_order.lock_balance -= params.b_actual_amount;
-            a_order.already_deal_amount += params.a_actual_amount;
+            if a_order.a_token_amount != 0 {
+                a_order.already_deal_amount += params.a_actual_amount;
+            } else {
+                a_order.already_deal_amount += params.b_actual_amount;
+            }
             b_order.already_deal_amount += params.b_actual_amount;
         }
 
@@ -802,6 +814,7 @@ impl Transaction {
             params.limit_price,
             params.amount,
             0,
+            0,
         );
         player.data.store_positions(pid);
         player.data.add_positions_event(pid);
@@ -823,37 +836,54 @@ impl Transaction {
             zkwasm_rust_sdk::dbg!("add market order, market is closed\n");
             return Err(ERROR_MARKET_NOT_EXIST);
         }
+        let market = market.unwrap();
 
-        let token_idx: u32;
-        let cost: u64;
+        if params.b_token_amount != 0 && params.a_token_amount != 0 {
+            zkwasm_rust_sdk::dbg!("add market order, both a and b token amount is not 0\n");
+            return Err(ERROR_AMOUNT);
+        }
+
+        let mut token_idx: u32 = u32::MAX;
+        let mut cost: u64 = 0;
         if params.flag == Order::FLAG_BUY as u64 {
-            token_idx = market.unwrap().token_a;
-            cost = params.amount;
-        } else {
-            token_idx = market.unwrap().token_b;
-            cost = params.amount;
+            if params.a_token_amount != 0 {
+                token_idx = market.token_a;
+                cost = params.a_token_amount;
+            } else {
+                token_idx = market.token_a;
+                let r = safe_mul(params.b_token_amount, market.last_deal_price);
+                if r.is_none() {
+                    return Err(ERROR_OVERFLOW);
+                }
+                cost = r.unwrap() * 2;
+            }
+        } else if params.flag == Order::FLAG_SELL as u64 {
+            if params.b_token_amount != 0 {
+                token_idx = market.token_b;
+                cost = params.b_token_amount;
+            } else {
+                token_idx = market.token_b;
+                cost = (params.a_token_amount*2* CONFIG.precision) / market.last_deal_price;
+            }
         };
 
-        {
-            let position = player.data.load_position(token_idx, pid);
-            // todo check overflow
-            if position.balance < cost {
-                let balance = position.balance;
+        let position = player.data.load_position(token_idx, pid);
+        // todo check overflow
+        if position.balance < cost {
+            let balance = position.balance;
 
-                zkwasm_rust_sdk::dbg!("add market order, token_idx {} balance {} is not enough, cost {}\n", token_idx, balance, cost);
-                return Err(ERROR_BALANCE_NOT_ENOUGH);
-            }
-
-            if !position.dec_balance(cost) {
-                zkwasm_rust_sdk::dbg!("add market order, balance is not enough\n");
-                return Err(ERROR_BALANCE_NOT_ENOUGH);
-
-            };
-            if !position.inc_lock_balance(cost) {
-                zkwasm_rust_sdk::dbg!("add market order, lock balance is overflow\n");
-                return Err(ERROR_BALANCE_NOT_ENOUGH)
-            };
+            zkwasm_rust_sdk::dbg!("add market order, token_idx {} balance {} is not enough, cost {}\n", token_idx, balance, cost);
+            return Err(ERROR_BALANCE_NOT_ENOUGH);
         }
+
+        if !position.dec_balance(cost) {
+            zkwasm_rust_sdk::dbg!("add market order, balance is not enough\n");
+            return Err(ERROR_BALANCE_NOT_ENOUGH);
+        };
+        if !position.inc_lock_balance(cost) {
+            zkwasm_rust_sdk::dbg!("add market order, lock balance is overflow\n");
+            return Err(ERROR_BALANCE_NOT_ENOUGH)
+        };
 
         let fee_token_idx = CONFIG.fee_token_idx;
         let fee = CONFIG.fee;
@@ -881,7 +911,8 @@ impl Transaction {
             cost,
             fee_cost,
             0,
-            params.amount,
+            params.b_token_amount,
+            params.a_token_amount,
             0,
         );
         player.data.store_positions(pid);
@@ -965,6 +996,7 @@ impl Transaction {
 pub struct AddMarketParams {
     pub token_a: u32,
     pub token_b: u32,
+    pub last_deal_price: u64,
 }
 
 #[derive(Debug, Clone)]
@@ -996,7 +1028,8 @@ pub struct AddLimitOrderParams {
 pub struct AddMarketOrderParams {
     pub market_id: u64,
     pub flag: u64,
-    pub amount: u64,
+    pub b_token_amount: u64,
+    pub a_token_amount: u64,
 }
 
 #[derive(Debug, Clone)]
@@ -1051,6 +1084,8 @@ pub struct Market {
     pub token_a: u32,
     /// B token 的token idx 比如是eth
     pub token_b: u32,
+
+    pub last_deal_price: u64,
     // todo add market price
 }
 
@@ -1060,12 +1095,13 @@ pub const MARKET_STATUS_CLOSE: u64 = 0;
 
 
 impl Market {
-    pub fn new(market_id: u64, token_a: u32, token_b: u32) -> Self {
+    pub fn new(market_id: u64, token_a: u32, token_b: u32, price: u64) -> Self {
         Self {
             market_id,
             status: MARKET_STATUS_OPEN, // 默认为open状态
             token_a,
             token_b,
+            last_deal_price: price,
         }
     }
 
@@ -1081,6 +1117,7 @@ impl Market {
         events.push(self.status);
         events.push(self.token_a as u64);
         events.push(self.token_b as u64);
+        events.push(self.last_deal_price);
         events[pos - 1] |= (events.len() - pos) as u64;
     }
 
@@ -1114,11 +1151,13 @@ impl StorageData for Market {
         let status = *u64data.next().unwrap();
         let token_a = *u64data.next().unwrap() as u32;
         let token_b = *u64data.next().unwrap() as u32;
+        let last_deal_price = *u64data.next().unwrap();
         Market {
             market_id,
             status,
             token_a,
             token_b,
+            last_deal_price,
         }
     }
 
@@ -1127,6 +1166,7 @@ impl StorageData for Market {
         data.push(self.status);
         data.push(self.token_a as u64);
         data.push(self.token_b as u64);
+        data.push(self.last_deal_price);
     }
 }
 
@@ -1242,7 +1282,9 @@ pub struct Order {
     /// for market order buy: limit of a token
     /// for limit order sell: number of b token
     /// for market order sell: limit of b token
-    pub amount: u64,
+    pub b_token_amount: u64,
+
+    pub a_token_amount: u64,
 
     /// 部分成交的数量
     /// 限价买单: 已经买了多少b token
@@ -1278,7 +1320,8 @@ impl Order {
         lock_balance: u64,
         lock_fee: u64,
         price: u64,
-        amount: u64,
+        b_token_amount: u64,
+        a_token_amount: u64,
         already_deal_amount: u64,
     ) -> Self {
         Self {
@@ -1291,7 +1334,8 @@ impl Order {
             lock_balance,
             lock_fee,
             price,
-            amount,
+            b_token_amount,
+            a_token_amount,
             already_deal_amount,
         }
     }
@@ -1324,7 +1368,7 @@ impl Order {
         if self.status == Order::STATUS_CANCEL || self.status == Order::STATUS_PARTIAL_CANCEL {
             return;
         }
-        if self.amount == self.already_deal_amount {
+        if self.b_token_amount == self.already_deal_amount {
             self.status = Order::STATUS_MATCH;
         } else {
             self.status = Order::STATUS_PARTIAL_MATCH;
@@ -1345,7 +1389,8 @@ impl Order {
         events.push(self.lock_balance);
         events.push(self.lock_fee);
         events.push(self.price);
-        events.push(self.amount);
+        events.push(self.b_token_amount);
+        events.push(self.a_token_amount);
         events.push(self.already_deal_amount);
         events[pos - 1] |= (events.len() - pos) as u64;
     }
@@ -1382,7 +1427,8 @@ impl StorageData for Order {
         let lock_balance = *u64data.next().unwrap();
         let lock_fee = *u64data.next().unwrap();
         let price = *u64data.next().unwrap();
-        let amount = *u64data.next().unwrap();
+        let b_token_amount = *u64data.next().unwrap();
+        let a_token_amount = *u64data.next().unwrap();
         let already_deal_amount = *u64data.next().unwrap();
         Order {
             id,
@@ -1394,7 +1440,8 @@ impl StorageData for Order {
             lock_balance,
             lock_fee,
             price,
-            amount,
+            b_token_amount,
+            a_token_amount,
             already_deal_amount,
         }
     }
@@ -1410,7 +1457,8 @@ impl StorageData for Order {
         data.push(self.lock_balance);
         data.push(self.lock_fee);
         data.push(self.price);
-        data.push(self.amount);
+        data.push(self.b_token_amount);
+        data.push(self.a_token_amount);
         data.push(self.already_deal_amount);
     }
 }

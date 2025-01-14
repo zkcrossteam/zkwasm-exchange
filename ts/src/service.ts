@@ -126,19 +126,21 @@ async function eventCallback(arg: TxWitness, data: BigUint64Array) {
         console.log("unknown event");
         break;
     }
-
-    for(let market_id of needtryMatchSystems) {
-        let ms = msM.get(market_id) as MatchingSystem;
-        let trades = ms.tryMatchOrder();
-        console.log("trades", trades);
-        if(trades.length == 0) {
-          continue;
-        }
-        let trade = trades[0];
-        let player = new Player(get_server_admin_key(), "http://localhost:3000");
-        player.addTrace(trade.a_order_id, trade.b_order_id, trade.a_actual_amount, trade.b_actual_amount);
-    }
     i += 1 + Number(eventLength);
+  }
+
+  for(let market_id of needtryMatchSystems) {
+    let ms = msM.get(market_id) as MatchingSystem;
+    // ms.removeMatchOrder();
+    let trades = ms.tryMatchOrder();
+    console.log("trades", trades);
+    if(trades.length == 0) {
+      continue;
+    }
+    let trade = trades[0];
+    let player = new Player(get_server_admin_key(), "http://localhost:3000");
+    console.log("add trade", trade.a_order_id, trade.b_order_id, trade.a_actual_amount, trade.b_actual_amount);
+    // player.addTrace(trade.a_order_id, trade.b_order_id, trade.a_actual_amount, trade.b_actual_amount);
   }
 }
 

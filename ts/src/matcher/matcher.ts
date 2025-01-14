@@ -20,7 +20,8 @@ export class Order {
     lock_balance: bigint;
     lock_fee: bigint;
     price: bigint;
-    amount: bigint;
+    b_token_amount: bigint;
+    a_token_amount: bigint;
     already_deal_amount: bigint;
 
     // not on chain shadow
@@ -36,7 +37,8 @@ export class Order {
         lock_balance: bigint,
         lock_fee: bigint,
         price: bigint,
-        amount: bigint,
+        b_token_amount: bigint,
+        a_token_amount: bigint,
         already_deal_amount: bigint
     ) {
         this.id = id;
@@ -48,7 +50,8 @@ export class Order {
         this.lock_balance = lock_balance;
         this.lock_fee = lock_fee;
         this.price = price;
-        this.amount = amount;
+        this.b_token_amount = b_token_amount;
+        this.a_token_amount = a_token_amount;
         this.already_deal_amount = already_deal_amount;
         this.shadow_already_deal_amount = already_deal_amount;
     }
@@ -70,7 +73,8 @@ export class Order {
             obj.lock_balance,
             obj.lock_fee,
             obj.price,
-            obj.amount,
+            obj.b_token_amount,
+            obj.a_token_amount,
             obj.already_deal_amount
         );
     }
@@ -86,12 +90,13 @@ export class Order {
             lock_balance: this.lock_balance,
             lock_fee: this.lock_fee,
             price: this.price,
-            amount: this.amount,
+            b_token_amount: this.b_token_amount,
+            a_token_amount: this.a_token_amount,
             already_deal_amount: this.already_deal_amount
         });
     }
 
-    toObject(): { id: bigint, type_: number, status: number, pid: [bigint, bigint], market_id: bigint, flag: number, lock_balance: bigint, lock_fee: bigint, price: bigint, amount: bigint, already_deal_amount: bigint } {
+    toObject(): { id: bigint, type_: number, status: number, pid: [bigint, bigint], market_id: bigint, flag: number, lock_balance: bigint, lock_fee: bigint, price: bigint, b_token_amount: bigint, a_token_amount: bigint, already_deal_amount: bigint } {
         return {
             id: this.id,
             type_: this.type_,
@@ -102,13 +107,14 @@ export class Order {
             lock_balance: this.lock_balance,
             lock_fee: this.lock_fee,
             price: this.price,
-            amount: this.amount,
+            b_token_amount: this.b_token_amount,
+            a_token_amount: this.a_token_amount,
             already_deal_amount: this.already_deal_amount
         };
     }
 
-    static fromObject(obj: { id: bigint, type_: number, status: number, pid: [bigint, bigint], market_id: bigint, flag: number, lock_balance: bigint, lock_fee: bigint, price: bigint, amount: bigint, already_deal_amount: bigint }): Order {
-        return new Order(obj.id, obj.type_, obj.status, obj.pid, obj.market_id, obj.flag, obj.lock_balance, obj.lock_fee, obj.price, obj.amount, obj.already_deal_amount);
+    static fromObject(obj: { id: bigint, type_: number, status: number, pid: [bigint, bigint], market_id: bigint, flag: number, lock_balance: bigint, lock_fee: bigint, price: bigint, b_token_amount: bigint, a_token_amount: bigint, already_deal_amount: bigint }): Order {
+        return new Order(obj.id, obj.type_, obj.status, obj.pid, obj.market_id, obj.flag, obj.lock_balance, obj.lock_fee, obj.price, obj.b_token_amount, obj.a_token_amount, obj.already_deal_amount);
     }
 
     toJSON() {
@@ -122,12 +128,13 @@ export class Order {
             lock_balance: this.lock_balance.toString(),
             lock_fee: this.lock_fee.toString(),
             price: this.price.toString(),
-            amount: this.amount.toString(),
+            b_token_amount: this.b_token_amount.toString(),
+            a_token_amount: this.a_token_amount.toString(),
             already_deal_amount: this.already_deal_amount.toString()
         };
     }
 
-    static fromJSON(obj: { id: string, type_: string, status: string, pid: string[], market_id: string, flag: string, lock_balance: string, lock_fee: string, price: string, amount: string, already_deal_amount: string }): Order {
+    static fromJSON(obj: { id: string, type_: string, status: string, pid: string[], market_id: string, flag: string, lock_balance: string, lock_fee: string, price: string, b_token_amount: string, a_token_amount: string, already_deal_amount: string }): Order {
         return new Order(
             BigInt(obj.id),
             Number(obj.type_),
@@ -138,7 +145,8 @@ export class Order {
             BigInt(obj.lock_balance),
             BigInt(obj.lock_fee),
             BigInt(obj.price),
-            BigInt(obj.amount),
+            BigInt(obj.b_token_amount),
+            BigInt(obj.a_token_amount),
             BigInt(obj.already_deal_amount)
         );
     }
@@ -155,7 +163,8 @@ export class Order {
             data[8],
             data[9],
             data[10],
-            data[11]
+            data[11],
+            data[12]
         );
     }
 
@@ -164,7 +173,17 @@ export class Order {
     }
 
     public isLive(): boolean {
-        return this.shadow_already_deal_amount != this.amount && !this.isCancel();
+       let r = this.shadow_already_deal_amount != this.get_amount() && !this.isCancel();
+       console.log("isLive", r, this.shadow_already_deal_amount, this.get_amount(), this.isCancel());
+       return r;
+    }
+
+    public get_amount(): bigint {
+        let amount : bigint = this.b_token_amount;
+        if(this.isMarketOrder()) {
+            amount = this.a_token_amount == 0n ? this.b_token_amount : this.a_token_amount;
+        }
+        return amount;
     }
 
     public isCancel(): boolean {
@@ -424,8 +443,8 @@ export class MatchingSystem {
                 }
 
                 // If either order is fully matched, move to the next order
-                if (bid.shadow_already_deal_amount == bid.amount) i++;
-                if (ask.shadow_already_deal_amount == ask.amount) j++;
+                if (bid.shadow_already_deal_amount == bid.get_amount()) i++;
+                if (ask.shadow_already_deal_amount == ask.get_amount()) j++;
             } else if (bid.price < ask.price) {
                 // If the best bid is lower than the best ask, no more matches are possible
                 break;
@@ -441,7 +460,7 @@ export class MatchingSystem {
     private canMatch(order1: Order, order2: Order): boolean {
         // console.log("aaaa", order1.shadow_already_deal_amount == order1.amount);
         // Check if either order is already fully matched
-        if (order1.shadow_already_deal_amount == order1.amount || order2.shadow_already_deal_amount == order2.amount) {
+        if (order1.shadow_already_deal_amount == order1.get_amount() || order2.shadow_already_deal_amount == order2.get_amount()) {
             return false;
         }
 
@@ -478,8 +497,8 @@ export class MatchingSystem {
         const sellOrder = order1.flag === Order.FLAG_SELL ? order1 : order2;
         if(buyOrder.isLimitOrder() && sellOrder.isLimitOrder()) {
             let price = sellOrder.price;
-            const sellLeft = sellOrder.amount - sellOrder.shadow_already_deal_amount;
-            const buyLeft = buyOrder.amount - buyOrder.shadow_already_deal_amount;
+            const sellLeft = sellOrder.get_amount() - sellOrder.shadow_already_deal_amount;
+            const buyLeft = buyOrder.get_amount() - buyOrder.shadow_already_deal_amount;
             const bActualAmount: bigint = buyLeft > sellLeft ? sellLeft : buyLeft; // min
             const aActualAmount = bActualAmount * price/PRICISION;
 
@@ -500,9 +519,14 @@ export class MatchingSystem {
             return trade;
         } else if (buyOrder.isMarketOrder() && sellOrder.isLimitOrder()) {
             let price = sellOrder.price;
-            const buyLeftAToken = buyOrder.amount - buyOrder.shadow_already_deal_amount; // atoken
-            const buyLeftBToken = buyLeftAToken*PRICISION/ price;
-            const sellLeftBtoken  = sellOrder.amount - sellOrder.shadow_already_deal_amount;
+            const buyLeftToken = buyOrder.get_amount() - buyOrder.shadow_already_deal_amount; // a or b token
+            let  buyLeftBToken: bigint;
+            if(buyOrder.a_token_amount != 0n) {
+                buyLeftBToken = buyLeftToken * PRICISION / price;
+            } else {
+                buyLeftBToken = buyLeftToken;
+            }
+            const sellLeftBtoken  = sellOrder.get_amount() - sellOrder.shadow_already_deal_amount;
             const bActualAmount = buyLeftBToken >  sellLeftBtoken ? sellLeftBtoken : buyLeftBToken; // min
             const aActualAmount = bActualAmount * price/PRICISION;
 
@@ -523,8 +547,14 @@ export class MatchingSystem {
             return trade;
         } else if (buyOrder.isLimitOrder() && sellOrder.isMarketOrder()) {
             let price = buyOrder.price;
-            const buyLeftBToken = buyOrder.amount - buyOrder.shadow_already_deal_amount;
-            const sellLeftBtoken  = sellOrder.amount - sellOrder.shadow_already_deal_amount;
+            const buyLeftBToken = buyOrder.get_amount() - buyOrder.shadow_already_deal_amount;
+            const sellLefttoken  = sellOrder.get_amount() - sellOrder.shadow_already_deal_amount;
+            let sellLeftBtoken: bigint;
+            if(sellOrder.a_token_amount != 0n) {
+                sellLeftBtoken = sellLefttoken * PRICISION / price;
+            } else {
+                sellLeftBtoken = sellLefttoken;
+            }
             const bActualAmount = buyLeftBToken >  sellLeftBtoken ? sellLeftBtoken : buyLeftBToken; // min
             const aActualAmount = bActualAmount * price/PRICISION;
 
@@ -560,7 +590,8 @@ const orderSchema = new mongoose.Schema({
     lock_balance: { type: BigInt, required: true },
     lock_fee: { type: BigInt, required: true },
     price: { type: BigInt, required: true },
-    amount: { type: BigInt, required: true },
+    b_token_amount: { type: BigInt, required: true },
+    a_token_amount: { type: BigInt, required: true },
     already_deal_amount: { type: BigInt, required: true },
 });
 

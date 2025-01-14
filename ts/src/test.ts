@@ -30,7 +30,7 @@ async function main() {
   console.log(state);
 
   console.log("add token market");
-  state = await player.addMarket(0n, 1n);
+  state = await player.addMarket(0n, 1n, 100n);
   console.log(state);
 
   console.log("Deposit 10000 tokens 0 to the player");
@@ -51,7 +51,7 @@ async function main() {
   console.log(state);
 
   console.log("add market order");
-  state = await playerB.addMarketOrder(1n, 0n, 100n);
+  state = await playerB.addMarketOrder(1n, 0n, 100n, 0n);
   console.log(state);
 
   console.log(JSON.stringify(state, null, 2));
@@ -59,8 +59,8 @@ async function main() {
   console.log("add trade");
   // @ts-ignore
   state = await player.addTrace(BigInt(state.state.order_id_counter - 1), BigInt(state.state.order_id_counter), 100n, 100n);
-  console.log(state);
-  // console.log(JSON.stringify(state, null, 2));
+  //console.log(state);
+  console.log(JSON.stringify(state, null, 2));
 
   console.log("limit order and limit order test");
 
@@ -104,7 +104,7 @@ async function main() {
   state = await player.addToken(2n, "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC");
   console.log(state);
   console.log("add token market");
-  state = await player.addMarket(0n, 2n);
+  state = await player.addMarket(0n, 2n, 100n);
   console.log(state);
 
   console.log("close market");

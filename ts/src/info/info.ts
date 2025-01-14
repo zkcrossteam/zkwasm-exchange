@@ -80,11 +80,14 @@ export class Market {
     // B token's token idx, e.g., ETH
     tokenB: number;
 
-    constructor(marketId: number, status: number, tokenA: number, tokenB: number) {
+    lastPrice: bigint;
+
+    constructor(marketId: number, status: number, tokenA: number, tokenB: number, price: bigint) {
         this.marketId = marketId;
         this.status = status;
         this.tokenA = tokenA;
         this.tokenB = tokenB;
+        this.lastPrice = price;
     }
 
     static fromMongooseDoc(doc: mongoose.Document): Market {
@@ -94,7 +97,7 @@ export class Market {
                 return ret;
             }
         });
-        return new Market(obj.marketId, obj.status, obj.tokenA, obj.tokenB);
+        return new Market(obj.marketId, obj.status, obj.tokenA, obj.tokenB, obj.lastPrice);
     }
 
     toMongooseDoc(): mongoose.Document {
@@ -103,32 +106,34 @@ export class Market {
             status: this.status,
             tokenA: this.tokenA,
             tokenB: this.tokenB,
+            lastPrice: this.lastPrice,
         });
     }
 
-    toObject(): { marketId: number, status: number, tokenA: number, tokenB: number } {
+    toObject(): { marketId: number, status: number, tokenA: number, tokenB: number, lastPrice: bigint } {
         return {
             marketId: this.marketId,
             status: this.status,
             tokenA: this.tokenA,
             tokenB: this.tokenB,
+            lastPrice: this.lastPrice,
         };
     }
 
-    static fromObject(obj: { marketId: number, status: number, tokenA: number, tokenB: number }): Market {
-        return new Market(obj.marketId, obj.status, obj.tokenA, obj.tokenB);
+    static fromObject(obj: { marketId: number, status: number, tokenA: number, tokenB: number, lastPrice:bigint }): Market {
+        return new Market(obj.marketId, obj.status, obj.tokenA, obj.tokenB, obj.lastPrice);
     }
 
     toJSON() {
         return this.toObject();
     }
 
-    static fromJSON(obj: { marketId: number, status: number, tokenA: number, tokenB: number }) {
+    static fromJSON(obj: { marketId: number, status: number, tokenA: number, tokenB: number, lastPrice:bigint }) {
         return Market.fromObject(obj);
     }
 
     static fromEvent(data: BigUint64Array): Market {
-        return new Market(Number(data[0]), Number(data[1]), Number(data[2]), Number(data[3]));
+        return new Market(Number(data[0]), Number(data[1]), Number(data[2]), Number(data[3]), data[4]);
     }
 }
 
@@ -147,6 +152,7 @@ const marketSchema = new mongoose.Schema({
     },
     tokenA: { type: Number, required: true },
     tokenB: { type: Number, required: true },
+    lastPrice: { type: BigInt, required: true }
 });
 
 // Create the Market model

@@ -169,10 +169,10 @@ export class Player {
     }
   }
 
-  async addMarket(tokenAIdx: bigint, tokenBIdx: bigint) {
+  async addMarket(tokenAIdx: bigint, tokenBIdx: bigint, lastPrice: bigint) {
     let nonce = await this.getNonce();
     try {
-      let params = [tokenAIdx, tokenBIdx];
+      let params = [tokenAIdx, tokenBIdx, lastPrice];
       let txData = new TransactionData(nonce, CMD_ADD_MARKET, params);
       let result = await this.rpc.sendTransaction(
           txData.encodeCommand(),
@@ -256,10 +256,10 @@ export class Player {
     }
   }
 
-  async addMarketOrder(marketId: bigint, flag: bigint, amount: bigint) {
+  async addMarketOrder(marketId: bigint, flag: bigint, bTokenAmount: bigint, aTokenAmount: bigint) {
     let nonce = await this.getNonce();
     try {
-      let params = [marketId, flag, amount];
+      let params = [marketId, flag, bTokenAmount, aTokenAmount];
       let txData = new TransactionData(nonce, ADD_MARKET_ORDER, params);
       let result = await this.rpc.sendTransaction(
           txData.encodeCommand(),

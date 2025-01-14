@@ -25,7 +25,7 @@ async function main() {
   console.log(state);
 
   console.log("add token market");
-  state = await player.addMarket(0n, 1n);
+  state = await player.addMarket(0n, 1n, 100n);
   console.log(state);
 
 
@@ -47,7 +47,7 @@ async function main() {
   console.log(state);
 
   console.log("add market order");
-  state = await playerB.addMarketOrder(1n, 0n, 100n);
+  state = await playerB.addMarketOrder(1n, 0n, 100n, 0n);
   console.log(state);
 
   console.log(JSON.stringify(state, null, 2));

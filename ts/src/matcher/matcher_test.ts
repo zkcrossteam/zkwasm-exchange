@@ -17,6 +17,7 @@ import { MatchingSystem, Order,PRICISION } from './matcher.js';
         BigInt(10),
         PRICISION*BigInt(2),
         BigInt(10),
+        BigInt(0),
         BigInt(0)
     );
 
@@ -31,6 +32,7 @@ import { MatchingSystem, Order,PRICISION } from './matcher.js';
         BigInt(10),
         PRICISION*BigInt(1),
         BigInt(15),
+        BigInt(0),
         BigInt(0)
     );
 
@@ -57,6 +59,7 @@ import { MatchingSystem, Order,PRICISION } from './matcher.js';
         BigInt(10),
         0n,
         BigInt(10),
+        BigInt(0),
         BigInt(0)
     );
 
@@ -71,6 +74,7 @@ import { MatchingSystem, Order,PRICISION } from './matcher.js';
         BigInt(10),
         PRICISION*BigInt(1),
         BigInt(15),
+        BigInt(0),
         BigInt(0)
     );
 
@@ -97,6 +101,7 @@ import { MatchingSystem, Order,PRICISION } from './matcher.js';
         BigInt(10),
         PRICISION*BigInt(1),
         BigInt(10),
+        BigInt(0),
         BigInt(0)
     );
 
@@ -111,6 +116,7 @@ import { MatchingSystem, Order,PRICISION } from './matcher.js';
         BigInt(10),
         0n,
         BigInt(15),
+        BigInt(0),
         BigInt(0)
     );
 
