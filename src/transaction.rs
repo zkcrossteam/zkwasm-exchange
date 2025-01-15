@@ -553,7 +553,7 @@ impl Transaction {
             zkwasm_rust_sdk::dbg!("add trade, a order or b order is not exist\n");
             return Err(ERROR_MARKET_NOT_EXIST);
         }
-        let market = market.unwrap();
+        let mut market = market.unwrap();
         if market.is_close() {
             zkwasm_rust_sdk::dbg!("add trade, a order or b order is closed\n");
             return Err(ERROR_MARKET_NOT_EXIST);
@@ -727,6 +727,9 @@ impl Transaction {
             params.a_actual_amount,
             params.b_actual_amount,
         );
+        market.last_deal_price = price;
+        market.add_event();
+        market.store();
         trade.store();
         trade.add_event(a_order.market_id);
         a_order.store();

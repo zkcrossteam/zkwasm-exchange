@@ -19,6 +19,8 @@ const WITHDRAW = 10n;
 const ADD_TRADE = 11n;
 const UPDATE_TOKEN = 12n;
 const CMD_INC_COUNTER = 2n;
+const FLAG_SELL = 0n;
+const FLAG_BUY = 1n;
 
 export class TransactionData {
   nonce: bigint;

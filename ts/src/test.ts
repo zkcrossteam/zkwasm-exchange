@@ -46,19 +46,67 @@ async function main() {
   state = await playerB.getState();
   console.log(JSON.stringify(state.player, null, 2));
 
-  console.log("add limit order");
+  let name = "limit order buy and market order sell test, b token amount:";
+  console.log(name, "add limit order");
   state = await player.addLimitOrder(1n, 1n, BigInt(1e9), 100n);
   console.log(state);
 
-  console.log("add market order");
+  console.log(name, "add market order");
   state = await playerB.addMarketOrder(1n, 0n, 100n, 0n);
   console.log(state);
 
   console.log(JSON.stringify(state, null, 2));
 
-  console.log("add trade");
+  console.log(name, "add trade");
   // @ts-ignore
   state = await player.addTrace(BigInt(state.state.order_id_counter - 1), BigInt(state.state.order_id_counter), 100n, 100n);
+  //console.log(state);
+  console.log(JSON.stringify(state, null, 2));
+
+  name = "limit order buy and market order sell test, a token amount: ";
+  console.log(name, "add limit order, buy");
+  state = await player.addLimitOrder(1n, 1n, BigInt(1e9), 100n);
+  console.log(state);
+
+  console.log(name, "add market order, sell");
+  state = await playerB.addMarketOrder(1n, 0n, 0n, 100n);
+  console.log(state);
+
+  // console.log(JSON.stringify(state, null, 2));
+
+  console.log(name, "add trade");
+  // @ts-ignore
+  state = await player.addTrace(BigInt(state.state.order_id_counter - 1), BigInt(state.state.order_id_counter), 100n, 100n);
+  //console.log(state);
+  console.log(JSON.stringify(state, null, 2));
+
+  name = "limit order sell and market order buy test, market order a token amount:";
+  console.log(name, "add limit order, sell");
+  state = await player.addLimitOrder(1n, 0n, BigInt(1e9), 100n);
+  console.log(state);
+
+  console.log(name, "add market order, buy");
+  state = await playerB.addMarketOrder(1n, 1n, 0n, 100n);
+  console.log(state);
+
+  console.log(name, "add trade");
+  // @ts-ignore
+  state = await player.addTrace(BigInt(state.state.order_id_counter), BigInt(state.state.order_id_counter - 1), 100n, 100n);
+  //console.log(state);
+  console.log(JSON.stringify(state, null, 2));
+
+  name = "limit order sell and market order buy test, market order b token amount:";
+  console.log(name, "add limit order, sell");
+  state = await player.addLimitOrder(1n, 0n, BigInt(1e9), 100n);
+  console.log(state);
+
+  console.log(name, "add market order, buy");
+  state = await playerB.addMarketOrder(1n, 1n, 100n, 0n);
+  console.log(state);
+
+  console.log(name, "add trade");
+  // @ts-ignore
+  state = await player.addTrace(BigInt(state.state.order_id_counter), BigInt(state.state.order_id_counter - 1), 100n, 100n);
   //console.log(state);
   console.log(JSON.stringify(state, null, 2));
 
