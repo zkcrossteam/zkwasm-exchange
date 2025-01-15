@@ -507,7 +507,7 @@ impl Transaction {
                 let withdraw_info = WithdrawInfo {
                     feature: params.token_idx<<8,
                     address: params.to_address,
-                    amount: params.amount,
+                    amount: params.amount/CONFIG.precision,
                 };
                 SettlementInfo::append_settlement(withdraw_info);
                 position.dec_balance(params.amount);
