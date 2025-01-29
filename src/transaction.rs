@@ -1109,7 +1109,7 @@ impl Market {
     }
 
     pub fn get_key(market_id: u64) -> [u64; 4] {
-        [COMMON_PREFIX, MARKET_STORE_PREFIX, 0, market_id]
+        [0, market_id, COMMON_PREFIX, MARKET_STORE_PREFIX]
     }
 
     pub fn add_event(&self) {
@@ -1186,7 +1186,7 @@ impl Token {
     }
 
     pub fn get_key(token_idx: u32) -> [u64; 4] {
-        [COMMON_PREFIX, TOKEN_STORE_PREFIX, 0, token_idx as u64]
+        [0, token_idx as u64, COMMON_PREFIX, TOKEN_STORE_PREFIX]
     }
 
     pub fn add_event(&self) {
@@ -1340,7 +1340,7 @@ impl Order {
     }
 
     pub fn get_key(id: u64) -> [u64; 4] {
-        [ORDER_PREFIX, 2, 0, id]
+        [0, id, ORDER_PREFIX, 2]
     }
 
     pub fn is_live(&self) -> bool {
@@ -1498,7 +1498,7 @@ impl Trade {
     }
 
     pub fn get_key(trade_id: u64) -> [u64; 4] {
-        [TRADE_PREFIX, 0, 0, trade_id]
+        [0, trade_id, TRADE_PREFIX, 0]
     }
 
     pub fn add_event(&self, market_id: u64) {

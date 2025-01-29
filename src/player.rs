@@ -23,7 +23,7 @@ impl Default for Position {
 
 impl Position {
     pub fn get_key(token_idx: u32, pid: &[u64; 2]) -> [u64; 4] {
-        [POSITION_PREFIX, token_idx as u64, pid[0], pid[1]]
+        [pid[0], pid[1], POSITION_PREFIX, token_idx as u64]
     }
 
     pub fn store(&self, token_idx: u32, pid: &[u64; 2]) {
