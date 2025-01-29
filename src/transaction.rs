@@ -1281,10 +1281,6 @@ pub struct Order {
     pub price: u64,
 
     /// 数量
-    /// for limit order buy: number of b token
-    /// for market order buy: limit of a token
-    /// for limit order sell: number of b token
-    /// for market order sell: limit of b token
     pub b_token_amount: u64,
 
     pub a_token_amount: u64,
