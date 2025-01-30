@@ -16,11 +16,12 @@ let account = "1234";
 const rpc = new ZKWasmAppRpc("http://localhost:3000");
 
 async function main() {
-  let state:any = await rpc.queryState(account);
-  let data = JSON.parse(state.data);
-  console.log(data);
-  let config = await rpc.query_config();
-  console.log("config", config);
+  let state:any = await rpc.queryData("markets");
+  console.log(state);
+
+  state = await rpc.queryData("pair/1");
+  console.log(state);
+
 }
 
 main();

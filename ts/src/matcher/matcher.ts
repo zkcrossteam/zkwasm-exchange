@@ -313,6 +313,15 @@ export class MatchingSystem {
         this.market_asks = [];
     }
 
+    queryInfo() {
+      return {
+        bids: this.bids.map((x)=> x.toJSON()),
+        asks: this.asks.map((x)=>x.toJSON()),
+        market_bids: this.market_bids.map((x)=>x.toJSON()),
+        market_asks: this.market_bids.map((x)=>x.toJSON()),
+      }
+    }
+
     removeMatchOrder(): void {
         this.bids = this.bids.filter((order) => order.isLive());
         this.asks = this.asks.filter((order) => order.isLive());

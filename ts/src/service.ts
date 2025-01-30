@@ -5,9 +5,10 @@ import {Position, TokenModel, Token, PositionModel, Market, MarketModel} from ".
 import {Order, OrderModel, Trade, TradeModel, MatchingSystem} from "./matcher/matcher.js";
 import { Player} from "./api.js";
 import {get_server_admin_key} from "zkwasm-ts-server/src/config.js";
+import { Express } from "express";
 
 
-const service = new Service(eventCallback, ()=>{return;});
+const service = new Service(eventCallback, ()=>{return;}, extra);
 service.initialize();
 
 const msM= new Map<bigint, MatchingSystem>();
@@ -29,6 +30,34 @@ for(let market of markets) {
     ms.upsertOrder(orderObj);
   }
   console.log("trade", ms.tryMatchOrder());
+}
+
+function extra (app: Express) {
+  app.get('/data/pair/:id', async(req:any, res) => {
+    let id:string = req.params.id;
+    console.log(id);
+    let query = msM.get(BigInt(id));
+    res.status(201).send({
+      success: true,
+      data: query?.queryInfo(),
+    });
+  });
+  app.get('/data/markets', async(req:any, res) => {
+    console.log("query...");
+    const value = req.body.msg;
+    const ks = [];
+    console.log(msM);
+    console.log(msM.keys());
+    for (const a of msM.keys()) {
+      console.log(a);
+      ks.push(a.toString());
+    }
+    res.status(201).send({
+      success: true,
+      data: ks,
+    });
+  });
+
 }
 
 service.serve();
