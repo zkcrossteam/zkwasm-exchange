@@ -6,17 +6,13 @@ import {Order, OrderModel, Trade, TradeModel, MatchingSystem} from "./matcher/ma
 import { Player} from "./api.js";
 import {get_server_admin_key} from "zkwasm-ts-server/src/config.js";
 import { Express } from "express";
-import {clearTxFromCommit, CommitModel, getTxFromCommit, insertTxIntoCommit} from "./commits.js";
+import { TxStateManager } from "./commits.js";
 import {merkleRootToBeHexString} from "zkwasm-ts-server/src/lib.js";
-
-const uncommittedTxs: TxWitness[] = [];
-
 
 const service = new Service(eventCallback, batchedCallback, extra, bootstrap);
 await service.initialize();
 
-
-let currentUncommitMerkleRoot: string = merkleRootToBeHexString(service.merkleRoot);
+let txStateManager = new TxStateManager(merkleRootToBeHexString(service.merkleRoot));
 
 const msM= new Map<bigint, MatchingSystem>();
 // load all market
@@ -86,23 +82,18 @@ const EVENT_MARKET = 3;
 const EVENT_ORDER = 4;
 const EVENT_TRADE = 5;
 
-let preemptcounter = 0;
-
 async function bootstrap(merkleRoot: string): Promise<TxWitness[]> {
-  const txs = await getTxFromCommit(merkleRoot);
+  const txs = await txStateManager.getTxFromCommit(merkleRoot);
   console.log("tsx in bootstrap:", txs);
   return txs;
 }
 
 async function batchedCallback(arg: TxWitness[], preMerkle: string, postMerkle: string) {
-  currentUncommitMerkleRoot = postMerkle;
-  await clearTxFromCommit(currentUncommitMerkleRoot);
-  preemptcounter = 0;
+  await txStateManager.moveToCommit(postMerkle);
 }
 
 async function eventCallback(arg: TxWitness, data: BigUint64Array) {
-  insertTxIntoCommit(currentUncommitMerkleRoot, arg, preemptcounter);
-  preemptcounter ++;
+  await txStateManager.insertTxIntoCommit(arg);
 
   console.log("eventCallback", arg, data);
   if(data[0] != 0n) {
