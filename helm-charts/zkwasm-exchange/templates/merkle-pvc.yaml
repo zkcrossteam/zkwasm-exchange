@@ -1,0 +1,17 @@
+{{- if and .Values.config.merkle.enabled .Values.config.merkle.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "zkwasm-exchange.fullname" . }}-merkle-rocksdb-pvc
+  labels:
+    {{- include "zkwasm-exchange.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/resource-policy": keep
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.config.merkle.persistence.size }}
+  storageClassName: {{ .Values.config.merkle.persistence.storageClassName }}
+{{- end }}
