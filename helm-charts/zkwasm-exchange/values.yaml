@@ -65,7 +65,7 @@ config:
     enabled: true
     image:
       repository: sinka2022/zkwasm-merkleservice
-      tag: v1
+      tag: latest
     port: 3030
     persistence:
       enabled: true

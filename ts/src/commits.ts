@@ -1,21 +1,8 @@
-import mongoose from 'mongoose';
 import {TxWitness} from 'zkwasm-ts-server/src/prover';
-const txSchema = new mongoose.Schema({
-  msg: { type: String, required: true },
-  pkx: { type: String, required: true },
-  pky: { type: String, required: true },
-  sigx: { type: String, required: true },
-  sigy: { type: String, required: true },
-  sigr: { type: String, required: true },
-});
-
-const commitSchema = new mongoose.Schema({
-    key: { type: String, required: true },
-    items: { type: [txSchema], default: [] } // List of objects
-});
-
-
-export const CommitModel = mongoose.model('Commit', commitSchema);
+// Import CommitModel from zkwasm-ts-server instead of defining our own
+import { CommitModel } from 'zkwasm-ts-server/src/commit.js';
+// Re-export CommitModel for use in other files
+export { CommitModel };
 
 export const getTxFromCommit = async (key: string): Promise<TxWitness[]> => {
   try {
