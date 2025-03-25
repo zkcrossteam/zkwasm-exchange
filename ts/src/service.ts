@@ -64,7 +64,17 @@ function extra (app: Express) {
       data: formattedMarkets,
     });
   });
-
+  app.get('/data/tokens', async(req:any, res) => {
+    let tokens = await TokenModel.find({});
+    const formattedTokens = tokens.map(token => ({
+      tokenIdx: token.tokenIdx,
+      address: token.address
+    }));
+    res.status(201).send({
+      success: true,
+      data: formattedTokens,
+    });
+  });
 }
 
 
