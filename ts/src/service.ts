@@ -50,21 +50,31 @@ function extra (app: Express) {
     });
   });
   app.get('/data/markets', async(req:any, res) => {
-    console.log("query...");
-    const value = req.body.msg;
-    const ks = [];
-    console.log(msM);
-    console.log(msM.keys());
-    for (const a of msM.keys()) {
-      console.log(a);
-      ks.push(a.toString());
-    }
+    let markets = await MarketModel.find({});
+    const formattedMarkets = markets.map(market => ({
+      marketId: market.marketId,
+      status: market.status,
+      tokenA: market.tokenA,
+      tokenB: market.tokenB,
+      lastPrice: market.lastPrice.toString()
+    }));
+
     res.status(201).send({
       success: true,
-      data: ks,
+      data: formattedMarkets,
     });
   });
-
+  app.get('/data/tokens', async(req:any, res) => {
+    let tokens = await TokenModel.find({});
+    const formattedTokens = tokens.map(token => ({
+      tokenIdx: token.tokenIdx,
+      address: token.address
+    }));
+    res.status(201).send({
+      success: true,
+      data: formattedTokens,
+    });
+  });
 }
 
 
