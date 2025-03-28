@@ -1,13 +1,12 @@
 import { Service } from "zkwasm-ts-server";
-import {TxWitness} from "zkwasm-ts-server/src/prover";
-import {Event, EventModel} from "./info/event.js";
-import {Position, TokenModel, Token, PositionModel, Market, MarketModel} from "./info/info.js";
-import {Order, OrderModel, Trade, TradeModel, MatchingSystem} from "./matcher/matcher.js";
+import { TxWitness, TxStateManager } from "zkwasm-ts-server";
+import { Event, EventModel } from "./info/event.js";
+import { Position, TokenModel, Token, PositionModel, Market, MarketModel} from "./info/info.js";
+import { Order, OrderModel, Trade, TradeModel, MatchingSystem} from "./matcher/matcher.js";
 import { Player} from "./api.js";
-import {get_server_admin_key} from "zkwasm-ts-server/src/config.js";
+import { get_server_admin_key} from "zkwasm-ts-server/src/config.js";
 import { Express } from "express";
-import { TxStateManager } from "./commits.js";
-import {merkleRootToBeHexString} from "zkwasm-ts-server/src/lib.js";
+import { merkleRootToBeHexString} from "zkwasm-ts-server/src/lib.js";
 
 const service = new Service(eventCallback, batchedCallback, extra, bootstrap);
 await service.initialize();
@@ -93,7 +92,10 @@ async function batchedCallback(arg: TxWitness[], preMerkle: string, postMerkle: 
 }
 
 async function eventCallback(arg: TxWitness, data: BigUint64Array) {
-  await txStateManager.insertTxIntoCommit(arg);
+  let pass = await txStateManager.insertTxIntoCommit(arg);
+  if (pass) { // already tracked event
+    return;
+  }
 
   console.log("eventCallback", arg, data);
   if(data[0] != 0n) {
