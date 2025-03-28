@@ -7,6 +7,8 @@ WORKDIR /app
 COPY . .
 
 # 先安装 npm 依赖
+# Copy .npmrc to root to bypass integrity checks
+COPY ts/.npmrc /root/.npmrc
 RUN cd ts && npm install && npx tsc
 
 # 复制预构建的 WASM 文件
