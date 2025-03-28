@@ -1,29 +1,51 @@
 # Stage 1: Builder
 FROM rustlang/rust:nightly-slim AS builder
 
-# Install build dependencies
+# Install build dependencies including libclang for RocksDB
 RUN apt-get update && apt-get install -y \
     git \
     build-essential \
     cmake \
     pkg-config \
+    libclang-dev \
+    llvm-dev \
+    libssl-dev \
+    clang \
+    zlib1g-dev \
+    libbz2-dev \
+    libsnappy-dev \
     && rm -rf /var/lib/apt/lists/*
+
+# Set environment variables for RocksDB build
+ENV ROCKSDB_LIB_DIR=/usr/local/lib
+ENV ROCKSDB_STATIC=1
 
 WORKDIR /app
 
+# Clone the repository with specific tag for stability
 RUN git clone --recurse-submodules https://github.com/DelphinusLab/zkwasm-mini-rollup.git
 
-WORKDIR /app/zkwasm-mini-rollup/dbservice
+# Build the merkle service (csm_service)
+WORKDIR /app/zkwasm-mini-rollup
 
-RUN cargo build --release
+# Print the directory structure for debugging
+RUN ls -la
+
+# Build the service with verbose output to help diagnose issues
+RUN RUST_BACKTRACE=1 cargo build --release -v
 
 # Stage 2: Runtime - Use a smaller base image
 FROM debian:bullseye-slim AS runtime
 
-# Install ONLY the necessary runtime dependencies
+# Install ONLY the necessary runtime dependencies for RocksDB
 RUN apt-get update && apt-get install -y \
     libssl-dev \
     ca-certificates \
+    libsnappy1v5 \
+    liblz4-1 \
+    libzstd1 \
+    libbz2-1.0 \
+    zlib1g \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -33,8 +55,11 @@ RUN groupadd -r appuser && useradd -r -g appuser appuser
 RUN mkdir -p /usr/rocksdb && chown -R appuser:appuser /usr/rocksdb
 
 # Copy the binary from the builder stage
-COPY --from=builder /app/zkwasm-mini-rollup/target/release/csm_service .
+COPY --from=builder /app/zkwasm-mini-rollup/target/release/csm_service /app/csm_service
 RUN chmod +x /app/csm_service
+
+# Verify the binary exists and is executable
+RUN ls -la /app/csm_service
 
 # Switch to non-root user
 USER appuser
