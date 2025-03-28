@@ -64,10 +64,11 @@ config:
   merkle:
     enabled: true
     image:
-      repository: sinka2022/zkwasm-merkleservice
+      repository: ghcr.io/zkcrossteam/zkwasm-exchange-merkle
       tag: latest
+      pullPolicy: Always
     port: 3030
-    command: ["/target/release/csm_service", "--uri", "/usr/rocksdb"]
+    command: ["/app/csm_service", "--uri", "/usr/rocksdb"]
     persistence:
       enabled: true
       storageClassName: csi-disk
@@ -75,6 +76,13 @@ config:
       mountPath: "/usr/rocksdb"
       annotations:
         "helm.sh/resource-policy": keep
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "200m"
+      limits:
+        memory: "512Mi"
+        cpu: "400m"
 
 service:
   type: ClusterIP

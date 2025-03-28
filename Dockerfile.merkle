@@ -1,0 +1,45 @@
+# Stage 1: Builder
+FROM rustlang/rust:nightly-slim AS builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    build-essential \
+    cmake \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+RUN git clone --recurse-submodules https://github.com/DelphinusLab/zkwasm-mini-rollup.git
+
+WORKDIR /app/zkwasm-mini-rollup/dbservice
+
+RUN cargo build --release
+
+# Stage 2: Runtime - Use a smaller base image
+FROM debian:bullseye-slim AS runtime
+
+# Install ONLY the necessary runtime dependencies
+RUN apt-get update && apt-get install -y \
+    libssl-dev \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Create a non-root user to run the service
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+RUN mkdir -p /usr/rocksdb && chown -R appuser:appuser /usr/rocksdb
+
+# Copy the binary from the builder stage
+COPY --from=builder /app/zkwasm-mini-rollup/target/release/csm_service .
+RUN chmod +x /app/csm_service
+
+# Switch to non-root user
+USER appuser
+
+EXPOSE 3030
+
+# Default command uses RocksDB
+CMD ["./csm_service", "--uri", "/usr/rocksdb"]
