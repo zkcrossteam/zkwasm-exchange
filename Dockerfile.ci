@@ -7,7 +7,10 @@ WORKDIR /app
 COPY . .
 
 # 先安装 npm 依赖
-RUN cd ts && npm install && npx tsc
+RUN cd ts && \
+    npm cache clean --force && \
+    npm install --no-cache --force && \
+    npx tsc
 
 # 复制预构建的 WASM 文件
 COPY build-artifacts/application/* ts/node_modules/zkwasm-ts-server/src/application/
