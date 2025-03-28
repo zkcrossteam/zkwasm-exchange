@@ -1,7 +1,7 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "zkwasm-automata.name" -}}
+{{- define "zkwasm-exchange.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -10,7 +10,7 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
-{{- define "zkwasm-automata.fullname" -}}
+{{- define "zkwasm-exchange.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -26,16 +26,16 @@ If release name contains chart name it will be used as a full name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "zkwasm-automata.chart" -}}
+{{- define "zkwasm-exchange.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "zkwasm-automata.labels" -}}
-helm.sh/chart: {{ include "zkwasm-automata.chart" . }}
-{{ include "zkwasm-automata.selectorLabels" . }}
+{{- define "zkwasm-exchange.labels" -}}
+helm.sh/chart: {{ include "zkwasm-exchange.chart" . }}
+{{ include "zkwasm-exchange.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -45,17 +45,17 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "zkwasm-automata.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "zkwasm-automata.name" . }}
+{{- define "zkwasm-exchange.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "zkwasm-exchange.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
 Create the name of the service account to use
 */}}
-{{- define "zkwasm-automata.serviceAccountName" -}}
+{{- define "zkwasm-exchange.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "zkwasm-automata.fullname" .) .Values.serviceAccount.name }}
+{{- default (include "zkwasm-exchange.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}

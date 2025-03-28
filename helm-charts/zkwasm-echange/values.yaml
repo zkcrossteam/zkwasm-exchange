@@ -65,8 +65,16 @@ config:
     enabled: true
     image:
       repository: sinka2022/zkwasm-merkleservice
-      tag: v1
+      tag: latest
     port: 3030
+    command: ["/target/release/csm_service", "--uri", "/usr/rocksdb"]
+    persistence:
+      enabled: true
+      storageClassName: csi-disk
+      size: 20Gi
+      mountPath: "/usr/rocksdb"
+      annotations:
+        "helm.sh/resource-policy": keep
 
 service:
   type: ClusterIP

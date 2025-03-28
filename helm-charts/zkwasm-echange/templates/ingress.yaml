@@ -1,9 +1,9 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "zkwasm-automata.fullname" . }}
+  name: {{ include "zkwasm-exchange.fullname" . }}
   labels:
-    {{- include "zkwasm-automata.labels" . | nindent 4 }}
+    {{- include "zkwasm-exchange.labels" . | nindent 4 }}
   annotations:
     kubernetes.io/ingress.class: nginx
     {{- if .Values.ingress.cors.enabled }}

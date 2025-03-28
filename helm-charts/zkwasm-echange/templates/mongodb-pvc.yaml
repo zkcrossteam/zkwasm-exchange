@@ -2,9 +2,9 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ include "zkwasm-automata.fullname" . }}-mongodb-pvc
+  name: {{ include "zkwasm-exchange.fullname" . }}-mongodb-pvc
   labels:
-    {{- include "zkwasm-automata.labels" . | nindent 4 }}
+    {{- include "zkwasm-exchange.labels" . | nindent 4 }}
   annotations:
     "helm.sh/resource-policy": keep
 spec:

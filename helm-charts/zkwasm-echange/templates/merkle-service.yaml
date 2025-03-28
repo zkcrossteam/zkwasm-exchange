@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "zkwasm-automata.fullname" . }}-merkle
+  name: {{ include "zkwasm-exchange.fullname" . }}-merkle
   labels:
-    {{- include "zkwasm-automata.labels" . | nindent 4 }}
+    {{- include "zkwasm-exchange.labels" . | nindent 4 }}
 spec:
   ports:
     - port: {{ .Values.config.merkle.port }}
@@ -11,4 +11,4 @@ spec:
       protocol: TCP
       name: http
   selector:
-    app: {{ include "zkwasm-automata.fullname" . }}-merkle
+    app: {{ include "zkwasm-exchange.fullname" . }}-merkle

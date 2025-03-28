@@ -1,0 +1,47 @@
+{{- if .Values.config.merkle.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "zkwasm-exchange.fullname" . }}-merkle
+  labels:
+    {{- include "zkwasm-exchange.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ include "zkwasm-exchange.fullname" . }}-merkle
+  template:
+    metadata:
+      labels:
+        app: {{ include "zkwasm-exchange.fullname" . }}-merkle
+    spec:
+      containers:
+      - name: merkle
+        image: "{{ .Values.config.merkle.image.repository }}:{{ .Values.config.merkle.image.tag }}"
+        {{- if .Values.config.merkle.command }}
+        command: 
+          {{- toYaml .Values.config.merkle.command | nindent 10 }}
+        {{- else }}
+        command: ["./target/release/csm_service"]
+        args: ["--uri", "mongodb://{{ include "zkwasm-exchange.fullname" . }}-mongodb:{{ .Values.config.mongodb.port }}"]
+        {{- end }}
+        ports:
+        - containerPort: {{ .Values.config.merkle.port }}
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "400m"
+        {{- if and .Values.config.merkle.persistence.enabled }}
+        volumeMounts:
+        - name: merkle-data
+          mountPath: {{ .Values.config.merkle.persistence.mountPath }}
+        {{- end }}
+      {{- if and .Values.config.merkle.persistence.enabled }}
+      volumes:
+      - name: merkle-data
+        persistentVolumeClaim:
+          claimName: {{ include "zkwasm-exchange.fullname" . }}-merkle-data
+      {{- end }}
+{{- end }}

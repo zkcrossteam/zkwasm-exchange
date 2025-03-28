@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "zkwasm-automata.fullname" . }}-rpc
+  name: {{ include "zkwasm-exchange.fullname" . }}-rpc
   labels:
     {{- include "zkwasm-automata.labels" . | nindent 4 }}
 spec:
@@ -21,13 +21,13 @@ spec:
         args: ["--experimental-modules", "--es-module-specifier-resolution=node", "ts/src/service.js"]
         env:
         - name: URI
-          value: mongodb://{{ include "zkwasm-automata.fullname" . }}-mongodb:{{ .Values.config.mongodb.port }}
+          value: mongodb://{{ include "zkwasm-exchange.fullname" . }}-mongodb:{{ .Values.config.mongodb.port }}
         - name: REDISHOST
-          value: {{ include "zkwasm-automata.fullname" . }}-redis
+          value: {{ include "zkwasm-exchange.fullname" . }}-redis
         - name: REDIS_PORT
           value: "{{ .Values.config.redis.port }}"
         - name: MERKLE_SERVER
-          value: http://{{ include "zkwasm-automata.fullname" . }}-merkle:{{ .Values.config.merkle.port }}
+          value: http://{{ include "zkwasm-exchange.fullname" . }}-merkle:{{ .Values.config.merkle.port }}
         - name: SERVER_ADMIN_KEY
           valueFrom:
             secretKeyRef:
