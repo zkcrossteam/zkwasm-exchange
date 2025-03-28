@@ -1,8 +1,8 @@
-# Default values for zkwasm-automata
+# Default values for zkwasm-exchange
 replicaCount: 1
 
 image:
-  repository: ghcr.io/zkcrossteam/zkwasm-automata
+  repository: ghcr.io/zkcrossteam/zkwasm-exchange
   pullPolicy: Always
   tag: "latest"  # Could be latest or MD5 value
 

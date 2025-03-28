@@ -2,17 +2,17 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "zkwasm-automata.fullname" . }}-redis
+  name: {{ include "zkwasm-exchange.fullname" . }}-redis
   labels:
-    {{- include "zkwasm-automata.labels" . | nindent 4 }}
+    {{- include "zkwasm-exchange.labels" . | nindent 4 }}
 spec:
   selector:
     matchLabels:
-      app: {{ include "zkwasm-automata.fullname" . }}-redis
+      app: {{ include "zkwasm-exchange.fullname" . }}-redis
   template:
     metadata:
       labels:
-        app: {{ include "zkwasm-automata.fullname" . }}-redis
+        app: {{ include "zkwasm-exchange.fullname" . }}-redis
     spec:
       containers:
       - name: redis

@@ -32,6 +32,6 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: {{ include "zkwasm-automata.fullname" . }}-rpc
+            name: {{ include "zkwasm-exchange.fullname" . }}-rpc
             port:
               number: {{ .Values.service.port }}

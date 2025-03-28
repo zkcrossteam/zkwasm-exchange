@@ -3,16 +3,16 @@ kind: Deployment
 metadata:
   name: {{ include "zkwasm-exchange.fullname" . }}-rpc
   labels:
-    {{- include "zkwasm-automata.labels" . | nindent 4 }}
+    {{- include "zkwasm-exchange.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      {{- include "zkwasm-automata.selectorLabels" . | nindent 6 }}
+      {{- include "zkwasm-exchange.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "zkwasm-automata.selectorLabels" . | nindent 8 }}
+        {{- include "zkwasm-exchange.selectorLabels" . | nindent 8 }}
     spec:
       containers:
       - name: app
