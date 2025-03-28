@@ -26,12 +26,13 @@ WORKDIR /usr/src/zkwasm-mini-rollup
 RUN cargo build --release
 
 # Runtime stage
-FROM debian:bullseye-slim AS runtime
+FROM debian:bookworm-slim AS runtime
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \
     libssl-dev \
     ca-certificates \
+    libstdc++6 \
     && rm -rf /var/lib/apt/lists/*
 
 # Setup the rocks db directory
