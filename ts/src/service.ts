@@ -1,6 +1,5 @@
 import { Service } from "zkwasm-ts-server";
-import { TxWitness, TxStateManager } from "zkwasm-ts-server";
-import { Event, EventModel } from "./info/event.js";
+import { TxWitness, TxStateManager, Event, EventModel } from "zkwasm-ts-server";
 import { Position, TokenModel, Token, PositionModel, Market, MarketModel} from "./info/info.js";
 import { Order, OrderModel, Trade, TradeModel, MatchingSystem} from "./matcher/matcher.js";
 import { Player} from "./api.js";
