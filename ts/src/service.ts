@@ -1,12 +1,11 @@
 import { Service } from "zkwasm-ts-server";
-import { TxWitness, TxStateManager } from "zkwasm-ts-server";
+import { TxWitness, TxStateManager, Event, EventModel } from "zkwasm-ts-server";
 import { Position, TokenModel, Token, PositionModel, Market, MarketModel} from "./info/info.js";
 import { Order, OrderModel, Trade, TradeModel, MatchingSystem} from "./matcher/matcher.js";
 import { Player} from "./api.js";
 import { get_server_admin_key} from "zkwasm-ts-server/src/config.js";
 import { Express } from "express";
 import { merkleRootToBeHexString} from "zkwasm-ts-server/src/lib.js";
-import { Event, EventModel } from "./info/event.js";
 
 const service = new Service(eventCallback, batchedCallback, extra, bootstrap);
 await service.initialize();
@@ -107,15 +106,10 @@ async function eventCallback(arg: TxWitness, data: BigUint64Array) {
     return;
   }
 
-  // Create event using the interface from zkwasm-ts-server
-  // Assuming Event constructor takes eventId and eventData parameters
-  const eventId = data[1].toString();
-  const eventData = Buffer.from(data.buffer);
-  
-  // Create the EventModel document directly
+  let event = new Event(data[1], data);
   let doc = new EventModel({
-    id: eventId,
-    data: eventData
+    id: event.id.toString(),
+    data: Buffer.from(event.data.buffer)
   });
   let result = await doc.save();
   if (!result) {
