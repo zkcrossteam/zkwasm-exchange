@@ -35,7 +35,7 @@ config:
     remote: "TRUE"
     autoSubmit: ""
     migrate: "FALSE"
-    image: "4C8AED67EEA742ACB671D133F9B91E40"
+    image: "FE22EBC217FDB0EBE26CC084EF219324"
     settlementContractAddress: ""
     rpcProvider: ""
   mongodb:
