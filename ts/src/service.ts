@@ -7,7 +7,7 @@ import { get_server_admin_key} from "zkwasm-ts-server/src/config.js";
 import { Express } from "express";
 import { merkleRootToBeHexString} from "zkwasm-ts-server/src/lib.js";
 
-const service = new Service(eventCallback, batchedCallback, extra, bootstrap);
+const service = new Service(eventCallback, batchedCallback, extra);
 await service.initialize();
 
 let txStateManager = new TxStateManager(merkleRootToBeHexString(service.merkleRoot));
@@ -81,9 +81,9 @@ const EVENT_ORDER = 4;
 const EVENT_TRADE = 5;
 
 async function bootstrap(merkleRoot: string): Promise<TxWitness[]> {
-  const txs = await txStateManager.getTxFromCommit(merkleRoot);
-  console.log("tsx in bootstrap:", txs);
-  return txs;
+  //const txs = await txStateManager.getTxFromCommit(merkleRoot);
+  //console.log("tsx in bootstrap:", txs);
+  return [];
 }
 
 async function batchedCallback(arg: TxWitness[], preMerkle: string, postMerkle: string) {
