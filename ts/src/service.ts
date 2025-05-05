@@ -91,11 +91,6 @@ async function batchedCallback(arg: TxWitness[], preMerkle: string, postMerkle: 
 }
 
 async function eventCallback(arg: TxWitness, data: BigUint64Array) {
-  let pass = await txStateManager.insertTxIntoCommit(arg);
-  if (pass) { // already tracked event
-    return;
-  }
-
   console.log("eventCallback", arg, data);
   if(data[0] != 0n) {
     console.log("non-zero return, tx failed");
